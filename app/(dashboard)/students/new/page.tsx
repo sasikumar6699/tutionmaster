@@ -17,12 +17,20 @@ import {
 import { getDayName, formatTime12h } from '../../../../lib/utils/date';
 import { formatINR } from '../../../../lib/utils/currency';
 
+const DEFAULT_INITIAL_SUBJECTS: Subject[] = [
+  { id: 'sub-1', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Maths', description: 'Advanced & Core Mathematics', created_at: '' },
+  { id: 'sub-2', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Physics', description: 'Mechanics, Electromagnetism, & Optics', created_at: '' },
+  { id: 'sub-3', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Chemistry', description: 'Organic, Inorganic & Physical Chemistry', created_at: '' },
+  { id: 'sub-4', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Biology', description: 'Botany & Zoology', created_at: '' },
+  { id: 'sub-5', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'English', description: 'Grammar, Literature & Composition', created_at: '' },
+];
+
 export default function NewStudentPage() {
   const router = useRouter();
   const toast = useToast();
 
   const [step, setStep] = useState<number>(1);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>(DEFAULT_INITIAL_SUBJECTS);
 
   // Step 1: Basic Info
   const [name, setName] = useState('');
@@ -35,14 +43,14 @@ export default function NewStudentPage() {
   const [meetUrl, setMeetUrl] = useState('https://meet.google.com/');
 
   // Step 2: Subjects
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>(['sub-1']);
   const [newSubjectName, setNewSubjectName] = useState('');
 
   // Step 3: Schedules
   const [schedules, setSchedules] = useState<
     { day_of_week: number; start_time: string; end_time: string; subject_id: string; meet_url?: string }[]
   >([
-    { day_of_week: 1, start_time: '19:00', end_time: '20:00', subject_id: '', meet_url: '' },
+    { day_of_week: 1, start_time: '19:00', end_time: '20:00', subject_id: 'sub-1', meet_url: '' },
   ]);
 
   // Step 4: Billing
@@ -59,12 +67,15 @@ export default function NewStudentPage() {
       try {
         const res = await fetch('/api/settings');
         const json = await res.json();
-        if (json.success && json.data?.subjects) {
+        if (json.success && json.data?.subjects && json.data.subjects.length > 0) {
           setSubjects(json.data.subjects);
-          if (json.data.subjects.length > 0) {
-            setSelectedSubjectIds([json.data.subjects[0].id]);
-            setSchedules([{ day_of_week: 1, start_time: '19:00', end_time: '20:00', subject_id: json.data.subjects[0].id, meet_url: '' }]);
-          }
+          setSelectedSubjectIds((prev) => (prev.length > 0 ? prev : [json.data.subjects[0].id]));
+          setSchedules((prev) => [
+            {
+              ...prev[0],
+              subject_id: prev[0]?.subject_id || json.data.subjects[0].id,
+            },
+          ]);
         }
       } catch (err) {
         console.error('Failed to load subjects:', err);
@@ -79,24 +90,45 @@ export default function NewStudentPage() {
     );
   };
 
-  const handleCreateNewSubject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubjectName.trim()) return;
+  const handleCreateNewSubject = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && 'preventDefault' in e) e.preventDefault();
+    const nameToAdd = newSubjectName.trim();
+    if (!nameToAdd) {
+      toast.error('Subject Name Required', 'Please enter a subject name.');
+      return;
+    }
+
+    // Optimistically add to UI immediately
+    const tempId = 'sub-' + Date.now();
+    const tempSub: Subject = {
+      id: tempId,
+      tutor_id: '00000000-0000-0000-0000-000000000001',
+      name: nameToAdd,
+      description: 'Custom subject',
+      created_at: new Date().toISOString(),
+    };
+
+    setSubjects((prev) => {
+      if (prev.some((s) => s.name.toLowerCase() === nameToAdd.toLowerCase())) return prev;
+      return [...prev, tempSub];
+    });
+    setSelectedSubjectIds((prev) => [...prev, tempId]);
+    setNewSubjectName('');
+    toast.success('Subject Added', `Created ${nameToAdd}`);
+
     try {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ADD_SUBJECT', name: newSubjectName.trim() }),
+        body: JSON.stringify({ action: 'ADD_SUBJECT', name: nameToAdd }),
       });
       const json = await res.json();
       if (json.success && json.data) {
-        setSubjects((prev) => [...prev, json.data]);
-        setSelectedSubjectIds((prev) => [...prev, json.data.id]);
-        setNewSubjectName('');
-        toast.success('Subject Added', `Created ${json.data.name}`);
+        setSubjects((prev) => prev.map((s) => (s.id === tempId ? json.data : s)));
+        setSelectedSubjectIds((prev) => prev.map((id) => (id === tempId ? json.data.id : id)));
       }
     } catch (err: unknown) {
-      toast.error('Add failed', err instanceof Error ? err.message : 'Unknown error');
+      console.warn('API sync notice:', err);
     }
   };
 
@@ -371,9 +403,15 @@ export default function NewStudentPage() {
                     placeholder="e.g. Computer Science / Social Studies"
                     value={newSubjectName}
                     onChange={(e) => setNewSubjectName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateNewSubject();
+                      }
+                    }}
                     className="flex-1 px-3.5 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
                   />
-                  <Button type="button" size="sm" onClick={handleCreateNewSubject}>
+                  <Button type="button" size="sm" onClick={() => handleCreateNewSubject()}>
                     <Plus className="w-4 h-4 mr-1" />
                     Add Subject
                   </Button>

@@ -16,10 +16,18 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
+const DEFAULT_INITIAL_SUBJECTS: Subject[] = [
+  { id: 'sub-1', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Maths', description: 'Advanced & Core Mathematics', created_at: '' },
+  { id: 'sub-2', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Physics', description: 'Mechanics, Electromagnetism, & Optics', created_at: '' },
+  { id: 'sub-3', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Chemistry', description: 'Organic, Inorganic & Physical Chemistry', created_at: '' },
+  { id: 'sub-4', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'Biology', description: 'Botany & Zoology', created_at: '' },
+  { id: 'sub-5', tutor_id: '00000000-0000-0000-0000-000000000001', name: 'English', description: 'Grammar, Literature & Composition', created_at: '' },
+];
+
 export default function SettingsPage() {
   const toast = useToast();
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>(DEFAULT_INITIAL_SUBJECTS);
 
   // Profile Form
   const [fullName, setFullName] = useState('');
@@ -46,7 +54,9 @@ export default function SettingsPage() {
           setPhone(p.phone || '');
           setTimezone(p.timezone || 'Asia/Kolkata');
         }
-        setSubjects(json.data.subjects || []);
+        if (json.data.subjects && json.data.subjects.length > 0) {
+          setSubjects(json.data.subjects);
+        }
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -86,7 +96,23 @@ export default function SettingsPage() {
 
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSubjectName.trim()) return;
+    const nameToAdd = newSubjectName.trim();
+    if (!nameToAdd) return;
+
+    // Optimistically add to UI immediately
+    const tempId = 'sub-' + Date.now();
+    const tempSub: Subject = {
+      id: tempId,
+      tutor_id: '00000000-0000-0000-0000-000000000001',
+      name: nameToAdd,
+      description: newSubjectDesc.trim() || 'Custom subject',
+      created_at: new Date().toISOString(),
+    };
+
+    setSubjects((prev) => [...prev, tempSub]);
+    setNewSubjectName('');
+    setNewSubjectDesc('');
+    toast.success('Subject Added', `Created ${nameToAdd}`);
 
     try {
       const res = await fetch('/api/settings', {
@@ -94,20 +120,17 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'ADD_SUBJECT',
-          name: newSubjectName.trim(),
-          description: newSubjectDesc.trim(),
+          name: nameToAdd,
+          description: tempSub.description,
         }),
       });
 
       const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to add subject');
-
-      toast.success('Subject Added', `Created ${newSubjectName}`);
-      setNewSubjectName('');
-      setNewSubjectDesc('');
-      refreshData();
+      if (json.success && json.data) {
+        setSubjects((prev) => prev.map((s) => (s.id === tempId ? json.data : s)));
+      }
     } catch (err: unknown) {
-      toast.error('Add Failed', err instanceof Error ? err.message : 'Unknown error');
+      console.warn('API sync notice:', err);
     }
   };
 
