@@ -11,7 +11,7 @@ interface GreetingBannerProps {
   todayClassesCount: number;
 }
 
-export function GreetingBanner({ tutorName = 'Aditya', todayClassesCount }: GreetingBannerProps) {
+export function GreetingBanner({ tutorName = 'SN', todayClassesCount }: GreetingBannerProps) {
   const greeting = getGreeting();
 
   return (

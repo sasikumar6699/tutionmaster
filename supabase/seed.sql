@@ -36,7 +36,7 @@ BEGIN
 
   -- 1. Create Default Profile
   INSERT INTO profiles (id, user_id, full_name, email, phone, timezone)
-  VALUES (v_tutor_id, '00000000-0000-0000-0000-000000000001', 'Aditya Sharma', 'tutor@tutorpulse.io', '+91 98765 43210', 'Asia/Kolkata')
+  VALUES (v_tutor_id, '00000000-0000-0000-0000-000000000001', 'SN', 'tutor@tutorpulse.io', '+91 98765 43210', 'Asia/Kolkata')
   ON CONFLICT (id) DO NOTHING;
 
   -- 2. Subjects

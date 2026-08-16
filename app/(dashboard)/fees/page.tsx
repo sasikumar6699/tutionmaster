@@ -470,7 +470,7 @@ export default function FeesPage() {
               <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900">TutorPulse Tuition Receipt</h3>
-                  <p className="text-xs text-slate-500">Aditya Sharma • Smart Tuition Academy</p>
+                  <p className="text-xs text-slate-500">SN Sharma • Smart Tuition Academy</p>
                 </div>
                 <StatusBadge status={invoicePreview.status} />
               </div>

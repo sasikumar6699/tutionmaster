@@ -116,7 +116,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* 1. Top Greeting Banner */}
       <GreetingBanner
-        tutorName="Aditya"
+        tutorName="SN"
         todayClassesCount={todayClasses.length}
       />
 

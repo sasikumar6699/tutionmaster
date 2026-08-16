@@ -40,7 +40,7 @@ export class ServerDatabaseService {
     const defaultProfile: Profile = {
       id: '00000000-0000-0000-0000-000000000001',
       user_id: '00000000-0000-0000-0000-000000000001',
-      full_name: 'Aditya Sharma',
+      full_name: 'SN',
       email: 'tutor@tutorpulse.io',
       phone: '+91 98765 43210',
       timezone: 'Asia/Kolkata',

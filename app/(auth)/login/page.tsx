@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      toast.success('Welcome back, Aditya!', 'Logged in to TutorPulse workspace');
+      toast.success('Welcome back, SN!', 'Logged in to TutorPulse workspace');
       router.push('/');
     }, 600);
   };

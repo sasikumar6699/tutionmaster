@@ -86,7 +86,7 @@ export function Sidebar() {
             AS
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-semibold text-slate-900 truncate">Aditya Sharma</h4>
+            <h4 className="text-xs font-semibold text-slate-900 truncate">SN</h4>
             <p className="text-[11px] text-slate-500 truncate">tutor@tutorpulse.io</p>
           </div>
         </div>
