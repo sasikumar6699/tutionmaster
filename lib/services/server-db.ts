@@ -370,6 +370,42 @@ export class ServerDatabaseService {
     }
   }
 
+  async deleteStudent(id: string): Promise<void> {
+    repository.deleteStudent(id);
+    try {
+      const supabase = this.getClient();
+      await supabase.from('payments').delete().eq('student_id', id);
+      await supabase.from('billing_records').delete().eq('student_id', id);
+      await supabase.from('billing_profiles').delete().eq('student_id', id);
+      await supabase.from('class_notes').delete().eq('student_id', id);
+      await supabase.from('attendance_records').delete().eq('student_id', id);
+      await supabase.from('class_sessions').delete().eq('student_id', id);
+      await supabase.from('recurring_schedules').delete().eq('student_id', id);
+      await supabase.from('student_subjects').delete().eq('student_id', id);
+      await supabase.from('students').delete().eq('id', id);
+    } catch {
+      // Handled
+    }
+  }
+
+  async clearAllSampleData(): Promise<void> {
+    repository.clearAllData();
+    try {
+      const supabase = this.getClient();
+      await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('billing_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('billing_profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('class_notes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('attendance_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('class_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('recurring_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('student_subjects').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch {
+      // Handled
+    }
+  }
+
   // 4. Class Sessions & Live Calendar
   async getClassSessions(startDateStr: string, endDateStr: string): Promise<EnrichedClassSession[]> {
     try {

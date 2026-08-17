@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { StatusBadge } from '../../../components/ui/Badge';
+import { useToast } from '../../../components/ui/Toast';
 import { EnrichedStudent } from '../../../lib/types/database.types';
 import {
   Users,
@@ -12,12 +13,14 @@ import {
   Video,
   ArrowUpRight,
   Layers,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatINR } from '../../../lib/utils/currency';
 import { formatTime12h } from '../../../lib/utils/date';
 
 export default function StudentsPage() {
+  const toast = useToast();
   const [students, setStudents] = useState<EnrichedStudent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ACTIVE');
@@ -37,6 +40,23 @@ export default function StudentsPage() {
   useEffect(() => {
     fetchStudents();
   }, [statusFilter]);
+
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (confirm(`Are you sure you want to permanently delete ${name}? This will remove all linked schedules and invoices.`)) {
+      try {
+        const res = await fetch(`/api/students/${id}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to delete student');
+
+        toast.success('Student Deleted', `${name} was deleted successfully.`);
+        fetchStudents();
+      } catch (err: unknown) {
+        toast.error('Delete Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
 
   const filteredStudents = students.filter((s) => {
     const matchesSearch =
@@ -104,12 +124,20 @@ export default function StudentsPage() {
 
       {/* Student Cards Grid */}
       {filteredStudents.length === 0 ? (
-        <Card className="p-12 text-center bg-white">
+        <Card className="p-12 text-center bg-white border-dashed border-2 border-slate-200">
           <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-700">No students found</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Try adjusting your search query or add a new student via the onboarding wizard.
+          <h3 className="text-base font-bold text-slate-800">No students found</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            Your student workspace is clean. Click &quot;Add New Student&quot; to register your first student, set their weekly timetable, and configure their billing model.
           </p>
+          <div className="mt-4">
+            <Link href="/students/new">
+              <Button variant="primary" size="sm">
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add Your First Student
+              </Button>
+            </Link>
+          </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -197,7 +225,7 @@ export default function StudentsPage() {
                       </span>
                     </div>
 
-                    {/* Batch Progress Bar (for CLASS_BATCH, e.g. Sreesha) */}
+                    {/* Batch Progress Bar */}
                     {billingType === 'CLASS_BATCH' && bp && (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
@@ -249,11 +277,20 @@ export default function StudentsPage() {
                     <span className="text-xs text-slate-400">No Meet Link</span>
                   )}
 
-                  <Link href={`/students/${student.id}`}>
-                    <Button variant="secondary" size="sm" className="text-xs font-semibold h-8">
-                      View 360° Profile
-                    </Button>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDeleteStudent(student.id, student.name)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title={`Delete ${student.name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <Link href={`/students/${student.id}`}>
+                      <Button variant="secondary" size="sm" className="text-xs font-semibold h-8">
+                        View 360° Profile
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
             );

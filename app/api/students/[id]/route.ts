@@ -47,3 +47,19 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await serverDb.deleteStudent(id);
+    return NextResponse.json({ success: true, message: 'Student deleted successfully' });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Failed to delete student' },
+      { status: 500 }
+    );
+  }
+}

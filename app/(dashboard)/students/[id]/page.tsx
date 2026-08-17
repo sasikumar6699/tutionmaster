@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { StatusBadge } from '../../../../components/ui/Badge';
@@ -26,6 +26,7 @@ import {
   ArrowLeft,
   Layers,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatINR } from '../../../../lib/utils/currency';
@@ -43,11 +44,13 @@ type StudentTab =
 
 export default function StudentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const toast = useToast();
 
   const studentId = params.id as string;
   const [student, setStudent] = useState<EnrichedStudent | null>(null);
   const [activeTab, setActiveTab] = useState<StudentTab>('overview');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [classes, setClasses] = useState<EnrichedClassSession[]>([]);
   const [invoices, setInvoices] = useState<EnrichedBillingRecord[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -220,6 +223,21 @@ export default function StudentDetailPage() {
     }
   };
 
+  const handleDeleteStudent = async () => {
+    try {
+      const res = await fetch(`/api/students/${student.id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to delete student');
+
+      toast.success('Student Deleted', `${student.name} was deleted successfully.`);
+      router.push('/students');
+    } catch (err: unknown) {
+      toast.error('Delete failed', err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
+
   const completedClasses = classes.filter((c) => c.status === 'PRESENT');
   const topicsList = classes.filter((c) => c.notes_record?.topic);
 
@@ -311,6 +329,16 @@ export default function StudentDetailPage() {
           >
             <Archive className="w-4 h-4 mr-1.5" />
             {student.status === 'ARCHIVED' ? 'Reactivate' : 'Archive'}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            Delete
           </Button>
         </div>
       </div>
@@ -702,7 +730,8 @@ export default function StudentDetailPage() {
 
       {/* TAB CONTENT: 8. SETTINGS & EDIT */}
       {activeTab === 'settings' && (
-        <Card>
+        <div className="space-y-6">
+          <Card>
           <CardHeader>
             <CardTitle className="text-sm font-bold">Edit Student & Billing Configuration</CardTitle>
           </CardHeader>
@@ -805,6 +834,31 @@ export default function StudentDetailPage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Danger Zone */}
+        <Card className="border-rose-200 bg-rose-50/30">
+          <CardHeader>
+            <CardTitle className="text-sm font-bold text-rose-900 flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              Delete Student Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <p className="text-rose-700">
+              Permanently delete <strong>{student.name}</strong>, along with all scheduled classes, attendance records, and billing data.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="text-rose-600 border-rose-300 hover:bg-rose-100 whitespace-nowrap font-semibold"
+            >
+              Delete {student.name}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
       )}
 
       {/* RECORD PAYMENT MODAL */}
@@ -885,6 +939,34 @@ export default function StudentDetailPage() {
               </Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirmOpen && (
+        <Modal
+          isOpen={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          title={`Delete Student: ${student.name}`}
+          description="Are you sure you want to permanently delete this student?"
+        >
+          <div className="space-y-4 py-2 text-xs sm:text-sm text-slate-600">
+            <p>
+              This action will permanently delete <strong>{student.name}</strong> along with all associated schedules, class sessions, attendance logs, invoices, and payments.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button type="button" variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDeleteStudent}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                Yes, Permanently Delete
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

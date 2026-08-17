@@ -33,6 +33,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Subject deleted' });
     }
 
+    if (payload.action === 'CLEAR_SAMPLE_DATA') {
+      await serverDb.clearAllSampleData();
+      return NextResponse.json({ success: true, message: 'All sample data cleared' });
+    }
+
     return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
   } catch (error: unknown) {
     return NextResponse.json(

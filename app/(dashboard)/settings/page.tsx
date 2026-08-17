@@ -153,6 +153,29 @@ export default function SettingsPage() {
     }
   };
 
+  const handleClearSampleData = async () => {
+    if (confirm('Are you sure you want to delete all sample students, schedules, and invoices to start fresh?')) {
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'CLEAR_SAMPLE_DATA' }),
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to clear data');
+
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tutorpulse_db_v1');
+        }
+
+        toast.success('Sample Data Cleared', 'All sample records removed. You can now add your real students.');
+        refreshData();
+      } catch (err: unknown) {
+        toast.error('Clear Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -212,14 +235,15 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Default Timezone</label>
+                <label className="block font-semibold text-slate-700 mb-1">Timezone</label>
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-indigo-500 font-medium"
                 >
-                  <option value="Asia/Kolkata">Asia/Kolkata (IST - UTC+05:30)</option>
-                  <option value="UTC">UTC</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST - +5:30)</option>
+                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
                   <option value="America/New_York">America/New_York (EST)</option>
                   <option value="Europe/London">Europe/London (GMT)</option>
                 </select>
@@ -326,6 +350,33 @@ export default function SettingsPage() {
               Enabled
             </span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 4. Data Management & Clean Slate */}
+      <Card className="border-rose-100 bg-rose-50/20">
+        <CardHeader>
+          <CardTitle className="text-sm font-bold flex items-center gap-2 text-rose-900">
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            Data Management & Clean Slate
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+          <div>
+            <p className="font-semibold text-slate-900">Clear All Sample Data (Start Fresh)</p>
+            <p className="text-slate-500 text-[11px] mt-0.5 max-w-xl">
+              Permanently wipes all sample students, schedules, attendance records, and mock invoices so you can create your own real students and schedules. Core subjects are preserved.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleClearSampleData}
+            className="text-rose-600 border-rose-300 hover:bg-rose-100 whitespace-nowrap font-semibold"
+          >
+            Clear Sample Data
+          </Button>
         </CardContent>
       </Card>
 

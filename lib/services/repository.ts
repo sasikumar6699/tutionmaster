@@ -45,246 +45,15 @@ const INITIAL_SUBJECTS: Subject[] = [
   { id: 'sub-5', tutor_id: DEMO_TUTOR_ID, name: 'English', description: 'Grammar, Literature & Composition', created_at: '2026-07-01T00:00:00Z' },
 ];
 
-const INITIAL_STUDENTS: Student[] = [
-  {
-    id: 'stud-1',
-    tutor_id: DEMO_TUTOR_ID,
-    name: 'Sreesha',
-    class_level: 'Class 8',
-    parent_name: 'Ramesh Kumar',
-    parent_phone: '+91 98401 23456',
-    student_phone: '+91 98401 23457',
-    email: 'sreesha.parent@gmail.com',
-    notes: 'Focus on algebraic factorization and linear geometry',
-    meet_url: 'https://meet.google.com/bwb-gduo-ukn',
-    status: 'ACTIVE',
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-08-14T00:00:00Z',
-  },
-  {
-    id: 'stud-2',
-    tutor_id: DEMO_TUTOR_ID,
-    name: 'Siva',
-    class_level: 'Class 16',
-    parent_name: 'Dr. Sundaram',
-    parent_phone: '+91 98402 34567',
-    student_phone: '+91 98402 34568',
-    email: 'siva.prep@gmail.com',
-    notes: 'Competitive physics numericals and calculus integration',
-    meet_url: 'https://meet.google.com/sht-cfst-qai',
-    status: 'ACTIVE',
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-08-14T00:00:00Z',
-  },
-  {
-    id: 'stud-3',
-    tutor_id: DEMO_TUTOR_ID,
-    name: 'Mrithika',
-    class_level: 'Class 8',
-    parent_name: 'Priya Lakshmi',
-    parent_phone: '+91 98403 45678',
-    student_phone: '+91 98403 45679',
-    email: 'mrithika.maths@gmail.com',
-    notes: 'Quick learner, needs thorough revision on word problems',
-    meet_url: 'https://meet.google.com/sht-cfst-qai',
-    status: 'ACTIVE',
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-08-14T00:00:00Z',
-  },
-];
-
-const INITIAL_STUDENT_SUBJECTS: StudentSubject[] = [
-  { id: 'ss-1', student_id: 'stud-1', subject_id: 'sub-1', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'ss-2', student_id: 'stud-2', subject_id: 'sub-1', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'ss-3', student_id: 'stud-2', subject_id: 'sub-2', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'ss-4', student_id: 'stud-3', subject_id: 'sub-1', created_at: '2026-07-01T00:00:00Z' },
-];
-
-const INITIAL_SCHEDULES: RecurringSchedule[] = [
-  // Sreesha: Mon 7-8 PM, Tue 7-8 PM
-  { id: 'sch-1', student_id: 'stud-1', subject_id: 'sub-1', day_of_week: 1, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/bwb-gduo-ukn', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  { id: 'sch-2', student_id: 'stud-1', subject_id: 'sub-1', day_of_week: 2, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/bwb-gduo-ukn', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  // Siva: Wed 7-8 PM, Thu 7-8 PM, Fri 7-8 PM, Sat 7-8 PM
-  { id: 'sch-3', student_id: 'stud-2', subject_id: 'sub-1', day_of_week: 3, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  { id: 'sch-4', student_id: 'stud-2', subject_id: 'sub-2', day_of_week: 4, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  { id: 'sch-5', student_id: 'stud-2', subject_id: 'sub-1', day_of_week: 5, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  { id: 'sch-6', student_id: 'stud-2', subject_id: 'sub-2', day_of_week: 6, start_time: '19:00', end_time: '20:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  // Mrithika: Mon 8-9 PM, Tue 8-9 PM
-  { id: 'sch-7', student_id: 'stud-3', subject_id: 'sub-1', day_of_week: 1, start_time: '20:00', end_time: '21:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-  { id: 'sch-8', student_id: 'stud-3', subject_id: 'sub-1', day_of_week: 2, start_time: '20:00', end_time: '21:00', effective_from: '2026-07-01', meet_url: 'https://meet.google.com/sht-cfst-qai', active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
-];
-
-const INITIAL_BILLING_PROFILES: BillingProfile[] = [
-  {
-    id: 'bp-1',
-    student_id: 'stud-1',
-    billing_type: 'CLASS_BATCH',
-    batch_size: 8,
-    fixed_amount: 6750,
-    active: true,
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-07-01T00:00:00Z',
-  },
-  {
-    id: 'bp-2',
-    student_id: 'stud-2',
-    billing_type: 'MONTHLY_FIXED',
-    fixed_amount: 8500,
-    billing_day: 3,
-    billing_cycle_start_day: 3,
-    billing_cycle_end_day: 2,
-    active: true,
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-07-01T00:00:00Z',
-  },
-  {
-    id: 'bp-3',
-    student_id: 'stud-3',
-    billing_type: 'MONTHLY_PER_CLASS',
-    per_class_amount: 388.88,
-    fixed_amount: 3111, // Reference monthly value
-    billing_day: 3,
-    active: true,
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-07-01T00:00:00Z',
-  },
-];
-
-const INITIAL_BILLING_RECORDS: BillingRecord[] = [
-  // Siva: July 3 - Aug 2 (Paid)
-  {
-    id: 'inv-1',
-    student_id: 'stud-2',
-    billing_profile_id: 'bp-2',
-    period_start: '2026-07-03',
-    period_end: '2026-08-02',
-    billing_type: 'MONTHLY_FIXED',
-    classes_count: 16,
-    rate: 8500,
-    amount_due: 8500,
-    amount_received: 8500,
-    balance: 0,
-    status: 'PAID',
-    due_date: '2026-07-03',
-    created_at: '2026-07-03T00:00:00Z',
-    updated_at: '2026-07-05T00:00:00Z',
-  },
-  // Siva: Aug 3 - Sep 2 (Pending ₹8,500 due Sep 3)
-  {
-    id: 'inv-2',
-    student_id: 'stud-2',
-    billing_profile_id: 'bp-2',
-    period_start: '2026-08-03',
-    period_end: '2026-09-02',
-    billing_type: 'MONTHLY_FIXED',
-    classes_count: 16,
-    rate: 8500,
-    amount_due: 8500,
-    amount_received: 0,
-    balance: 8500,
-    status: 'PENDING',
-    due_date: '2026-09-03',
-    created_at: '2026-08-03T00:00:00Z',
-    updated_at: '2026-08-03T00:00:00Z',
-  },
-  // Mrithika: July cycle (Paid ₹3,111)
-  {
-    id: 'inv-3',
-    student_id: 'stud-3',
-    billing_profile_id: 'bp-3',
-    period_start: '2026-07-01',
-    period_end: '2026-07-31',
-    billing_type: 'MONTHLY_PER_CLASS',
-    classes_count: 8,
-    rate: 388.88,
-    amount_due: 3111,
-    amount_received: 3111,
-    balance: 0,
-    status: 'PAID',
-    due_date: '2026-08-03',
-    created_at: '2026-08-01T00:00:00Z',
-    updated_at: '2026-08-03T00:00:00Z',
-  },
-];
-
-const INITIAL_PAYMENTS: Payment[] = [
-  {
-    id: 'pay-1',
-    student_id: 'stud-2',
-    billing_record_id: 'inv-1',
-    amount: 8500,
-    payment_date: '2026-07-05',
-    payment_method: 'CASH',
-    notes: 'Received full monthly fee for July cycle in cash',
-    created_at: '2026-07-05T10:00:00Z',
-  },
-  {
-    id: 'pay-2',
-    student_id: 'stud-3',
-    billing_record_id: 'inv-3',
-    amount: 3111,
-    payment_date: '2026-08-03',
-    payment_method: 'CASH',
-    notes: 'Cash payment for July tuition sessions',
-    created_at: '2026-08-03T11:00:00Z',
-  },
-];
-
-// Historical classes + Topics + Attendance across July & August 2026
-// Note: Sreesha has 7 completed PRESENT classes in batch (1 away from 8 batch completion)
-const INITIAL_CLASSES: ClassSession[] = [
-  // Sreesha (7 completed PRESENT classes)
-  { id: 'cls-sr-1', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-1', class_date: '2026-07-20', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-07-20T19:02:00Z', actual_end: '2026-07-20T19:58:00Z', actual_duration_minutes: 56, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-07-20T00:00:00Z', updated_at: '2026-07-20T20:00:00Z' },
-  { id: 'cls-sr-2', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-2', class_date: '2026-07-21', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-07-21T19:00:00Z', actual_end: '2026-07-21T20:00:00Z', actual_duration_minutes: 60, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-07-21T00:00:00Z', updated_at: '2026-07-21T20:00:00Z' },
-  { id: 'cls-sr-3', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-1', class_date: '2026-07-27', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-07-27T19:05:00Z', actual_end: '2026-07-27T19:55:00Z', actual_duration_minutes: 50, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-07-27T00:00:00Z', updated_at: '2026-07-27T20:00:00Z' },
-  { id: 'cls-sr-4', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-2', class_date: '2026-07-28', scheduled_start: '19:00', scheduled_end: '20:00', status: 'ABSENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-07-28T00:00:00Z', updated_at: '2026-07-28T20:00:00Z' },
-  { id: 'cls-sr-5', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-1', class_date: '2026-08-03', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-03T19:00:00Z', actual_end: '2026-08-03T19:58:00Z', actual_duration_minutes: 58, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-08-03T00:00:00Z', updated_at: '2026-08-03T20:00:00Z' },
-  { id: 'cls-sr-6', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-2', class_date: '2026-08-04', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-04T19:01:00Z', actual_end: '2026-08-04T20:01:00Z', actual_duration_minutes: 60, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-08-04T00:00:00Z', updated_at: '2026-08-04T20:00:00Z' },
-  { id: 'cls-sr-7', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-1', class_date: '2026-08-10', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-10T19:00:00Z', actual_end: '2026-08-10T19:52:00Z', actual_duration_minutes: 52, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-08-10T00:00:00Z', updated_at: '2026-08-10T20:00:00Z' },
-  { id: 'cls-sr-8', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-2', class_date: '2026-08-11', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-11T19:03:00Z', actual_end: '2026-08-11T19:57:00Z', actual_duration_minutes: 54, status: 'PRESENT', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-08-11T00:00:00Z', updated_at: '2026-08-11T20:00:00Z' },
-  // Upcoming class for Sreesha (This 8th completed class will trigger ₹6,750 fee!)
-  { id: 'cls-sr-9', student_id: 'stud-1', subject_id: 'sub-1', schedule_id: 'sch-1', class_date: '2026-08-17', scheduled_start: '19:00', scheduled_end: '20:00', status: 'UPCOMING', meet_url: 'https://meet.google.com/bwb-gduo-ukn', created_at: '2026-08-14T00:00:00Z', updated_at: '2026-08-14T00:00:00Z' },
-
-  // Siva classes (Maths & Physics)
-  { id: 'cls-sv-1', student_id: 'stud-2', subject_id: 'sub-1', schedule_id: 'sch-3', class_date: '2026-08-05', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-05T19:00:00Z', actual_end: '2026-08-05T20:00:00Z', actual_duration_minutes: 60, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-05T00:00:00Z', updated_at: '2026-08-05T20:00:00Z' },
-  { id: 'cls-sv-2', student_id: 'stud-2', subject_id: 'sub-2', schedule_id: 'sch-4', class_date: '2026-08-06', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-06T19:05:00Z', actual_end: '2026-08-06T19:58:00Z', actual_duration_minutes: 53, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-06T00:00:00Z', updated_at: '2026-08-06T20:00:00Z' },
-  { id: 'cls-sv-3', student_id: 'stud-2', subject_id: 'sub-1', schedule_id: 'sch-5', class_date: '2026-08-07', scheduled_start: '19:00', scheduled_end: '20:00', status: 'RESCHEDULED', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-07T00:00:00Z', updated_at: '2026-08-07T18:00:00Z' },
-  { id: 'cls-sv-3b', student_id: 'stud-2', subject_id: 'sub-1', schedule_id: 'sch-5', class_date: '2026-08-09', scheduled_start: '18:00', scheduled_end: '19:00', actual_start: '2026-08-09T18:00:00Z', actual_end: '2026-08-09T19:00:00Z', actual_duration_minutes: 60, status: 'PRESENT', rescheduled_from_id: 'cls-sv-3', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-07T18:00:00Z', updated_at: '2026-08-09T19:00:00Z' },
-  { id: 'cls-sv-4', student_id: 'stud-2', subject_id: 'sub-2', schedule_id: 'sch-6', class_date: '2026-08-08', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-08T19:00:00Z', actual_end: '2026-08-08T19:55:00Z', actual_duration_minutes: 55, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-08T00:00:00Z', updated_at: '2026-08-08T20:00:00Z' },
-  { id: 'cls-sv-5', student_id: 'stud-2', subject_id: 'sub-1', schedule_id: 'sch-3', class_date: '2026-08-12', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-12T19:00:00Z', actual_end: '2026-08-12T19:58:00Z', actual_duration_minutes: 58, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-12T00:00:00Z', updated_at: '2026-08-12T20:00:00Z' },
-  { id: 'cls-sv-6', student_id: 'stud-2', subject_id: 'sub-2', schedule_id: 'sch-4', class_date: '2026-08-13', scheduled_start: '19:00', scheduled_end: '20:00', actual_start: '2026-08-13T19:02:00Z', actual_end: '2026-08-13T19:59:00Z', actual_duration_minutes: 57, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-13T00:00:00Z', updated_at: '2026-08-13T20:00:00Z' },
-  // Today's classes (August 14, 2026 is a Friday!)
-  { id: 'cls-sv-today', student_id: 'stud-2', subject_id: 'sub-1', schedule_id: 'sch-5', class_date: '2026-08-14', scheduled_start: '19:00', scheduled_end: '20:00', status: 'UPCOMING', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-14T00:00:00Z', updated_at: '2026-08-14T00:00:00Z' },
-  { id: 'cls-sv-sat', student_id: 'stud-2', subject_id: 'sub-2', schedule_id: 'sch-6', class_date: '2026-08-15', scheduled_start: '19:00', scheduled_end: '20:00', status: 'UPCOMING', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-14T00:00:00Z', updated_at: '2026-08-14T00:00:00Z' },
-
-  // Mrithika classes (Mon/Tue 8-9 PM)
-  { id: 'cls-mr-1', student_id: 'stud-3', subject_id: 'sub-1', schedule_id: 'sch-7', class_date: '2026-08-03', scheduled_start: '20:00', scheduled_end: '21:00', actual_start: '2026-08-03T20:00:00Z', actual_end: '2026-08-03T20:55:00Z', actual_duration_minutes: 55, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-03T00:00:00Z', updated_at: '2026-08-03T21:00:00Z' },
-  { id: 'cls-mr-2', student_id: 'stud-3', subject_id: 'sub-1', schedule_id: 'sch-8', class_date: '2026-08-04', scheduled_start: '20:00', scheduled_end: '21:00', actual_start: '2026-08-04T20:02:00Z', actual_end: '2026-08-04T20:58:00Z', actual_duration_minutes: 56, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-04T00:00:00Z', updated_at: '2026-08-04T21:00:00Z' },
-  { id: 'cls-mr-3', student_id: 'stud-3', subject_id: 'sub-1', schedule_id: 'sch-7', class_date: '2026-08-10', scheduled_start: '20:00', scheduled_end: '21:00', actual_start: '2026-08-10T20:00:00Z', actual_end: '2026-08-10T21:00:00Z', actual_duration_minutes: 60, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-10T00:00:00Z', updated_at: '2026-08-10T21:00:00Z' },
-  { id: 'cls-mr-4', student_id: 'stud-3', subject_id: 'sub-1', schedule_id: 'sch-8', class_date: '2026-08-11', scheduled_start: '20:00', scheduled_end: '21:00', actual_start: '2026-08-11T20:01:00Z', actual_end: '2026-08-11T20:56:00Z', actual_duration_minutes: 55, status: 'PRESENT', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-11T00:00:00Z', updated_at: '2026-08-11T21:00:00Z' },
-  { id: 'cls-mr-5', student_id: 'stud-3', subject_id: 'sub-1', schedule_id: 'sch-7', class_date: '2026-08-17', scheduled_start: '20:00', scheduled_end: '21:00', status: 'UPCOMING', meet_url: 'https://meet.google.com/sht-cfst-qai', created_at: '2026-08-14T00:00:00Z', updated_at: '2026-08-14T00:00:00Z' },
-];
-
-const INITIAL_NOTES: ClassNote[] = [
-  { id: 'note-1', class_session_id: 'cls-sr-1', student_id: 'stud-1', subject_id: 'sub-1', topic: 'Algebraic Identities', subtopic: '(a+b)^2 and (a-b)^2 expansions', homework: 'NCERT Ex 9.4 Q1-Q5', notes: 'Mastered standard expansion, practicing negative coefficient cases', created_at: '2026-07-20T20:00:00Z', updated_at: '2026-07-20T20:00:00Z' },
-  { id: 'note-2', class_session_id: 'cls-sr-2', student_id: 'stud-1', subject_id: 'sub-1', topic: 'Linear Equations in One Variable', subtopic: 'Solving equations with variable on both sides', homework: 'Exercise 2.3 Q1-Q10', notes: 'Very good retention, completed practice problems in 15 mins', created_at: '2026-07-21T20:00:00Z', updated_at: '2026-07-21T20:00:00Z' },
-  { id: 'note-3', class_session_id: 'cls-sr-7', student_id: 'stud-1', subject_id: 'sub-1', topic: 'Linear Equations Word Problems', subtopic: 'Age and coin ratio problems', homework: 'Exercise 4.2 all word problems', notes: 'Needs additional practice on framing equations from word problems', created_at: '2026-08-10T20:00:00Z', updated_at: '2026-08-10T20:00:00Z' },
-  { id: 'note-4', class_session_id: 'cls-sv-1', student_id: 'stud-2', subject_id: 'sub-1', topic: 'Calculus - Definite Integrals', subtopic: 'Substitution method & trigonometric transforms', homework: 'IIT-JEE Question Bank Set 3', notes: 'Excellent conceptual grasp, solved 8 complex problems', created_at: '2026-08-05T20:00:00Z', updated_at: '2026-08-05T20:00:00Z' },
-  { id: 'note-5', class_session_id: 'cls-sv-2', student_id: 'stud-2', subject_id: 'sub-2', topic: 'Electromagnetic Induction', subtopic: "Faraday's Law and Lenz's Law problems", homework: 'HC Verma Vol 2 Chapter 38 numericals 1-15', notes: 'Clarified induced EMF sign convention with circuit diagrams', created_at: '2026-08-06T20:00:00Z', updated_at: '2026-08-06T20:00:00Z' },
-  { id: 'note-6', class_session_id: 'cls-mr-1', student_id: 'stud-3', subject_id: 'sub-1', topic: 'Squares and Square Roots', subtopic: 'Prime factorisation method', homework: 'NCERT Ex 6.3 all parts', notes: 'Understood square roots clearly, fast calculations', created_at: '2026-08-03T21:00:00Z', updated_at: '2026-08-03T21:00:00Z' },
-  { id: 'note-7', class_session_id: 'cls-mr-4', student_id: 'stud-3', subject_id: 'sub-1', topic: 'Comparing Quantities', subtopic: 'Compound Interest formulas', homework: 'Ex 8.3 Q1 to Q6', notes: 'Understood compounding intervals (semi-annually vs annually)', created_at: '2026-08-11T21:00:00Z', updated_at: '2026-08-11T21:00:00Z' },
-];
-
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  { id: 'att-1', class_session_id: 'cls-sr-1', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-07-20T20:00:00Z', notes: 'On time, active participation' },
-  { id: 'att-2', class_session_id: 'cls-sr-2', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-07-21T20:00:00Z', notes: 'Completed homework' },
-  { id: 'att-3', class_session_id: 'cls-sr-3', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-07-27T20:00:00Z', notes: 'Good work' },
-  { id: 'att-4', class_session_id: 'cls-sr-4', student_id: 'stud-1', status: 'ABSENT', marked_at: '2026-07-28T20:00:00Z', notes: 'School exam preparation' },
-  { id: 'att-5', class_session_id: 'cls-sr-5', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-08-03T20:00:00Z', notes: 'Regular class' },
-  { id: 'att-6', class_session_id: 'cls-sr-6', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-08-04T20:00:00Z', notes: 'Regular class' },
-  { id: 'att-7', class_session_id: 'cls-sr-7', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-08-10T20:00:00Z', notes: 'Regular class' },
-  { id: 'att-8', class_session_id: 'cls-sr-8', student_id: 'stud-1', status: 'PRESENT', marked_at: '2026-08-11T20:00:00Z', notes: 'Regular class' },
-];
+const INITIAL_STUDENTS: Student[] = [];
+const INITIAL_STUDENT_SUBJECTS: StudentSubject[] = [];
+const INITIAL_SCHEDULES: RecurringSchedule[] = [];
+const INITIAL_BILLING_PROFILES: BillingProfile[] = [];
+const INITIAL_BILLING_RECORDS: BillingRecord[] = [];
+const INITIAL_PAYMENTS: Payment[] = [];
+const INITIAL_CLASSES: ClassSession[] = [];
+const INITIAL_NOTES: ClassNote[] = [];
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
 
 // In-Memory / Local Storage Store State
 class TuitionRepository {
@@ -573,6 +342,33 @@ class TuitionRepository {
       return true;
     }
     return false;
+  }
+
+  public deleteStudent(id: string): boolean {
+    this.students = this.students.filter((s) => s.id !== id);
+    this.studentSubjects = this.studentSubjects.filter((ss) => ss.student_id !== id);
+    this.schedules = this.schedules.filter((sch) => sch.student_id !== id);
+    this.classSessions = this.classSessions.filter((cs) => cs.student_id !== id);
+    this.attendance = this.attendance.filter((ar) => ar.student_id !== id);
+    this.notes = this.notes.filter((cn) => cn.student_id !== id);
+    this.billingProfiles = this.billingProfiles.filter((bp) => bp.student_id !== id);
+    this.billingRecords = this.billingRecords.filter((br) => br.student_id !== id);
+    this.payments = this.payments.filter((p) => p.student_id !== id);
+    this.saveToLocalStorage();
+    return true;
+  }
+
+  public clearAllData(): void {
+    this.students = [];
+    this.studentSubjects = [];
+    this.schedules = [];
+    this.classSessions = [];
+    this.attendance = [];
+    this.notes = [];
+    this.billingProfiles = [];
+    this.billingRecords = [];
+    this.payments = [];
+    this.saveToLocalStorage();
   }
 
   public updateBillingProfile(studentId: string, data: Partial<BillingProfile>): BillingProfile | null {
