@@ -3,7 +3,7 @@ import './globals.css';
 import { ToastProvider } from '../components/ui/Toast';
 
 export const metadata: Metadata = {
-  title: 'TutorPulse - Smart Tuition Management Platform',
+  title: 'Tuition Master - Smart Tuition Management Platform',
   description: 'Scalable tuition management system for classes, schedules, live timer, attendance, topics, automated billing, and Google Meet.',
 };
 
@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
+      <body className="antialiased bg-slate-50 text-slate-900 selection:bg-purple-500 selection:text-white">
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

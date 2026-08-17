@@ -16,7 +16,7 @@ import {
 import { repository } from './repository';
 import { calculateBatchProgress } from '../billing/engine';
 import { generateSessionsForRange } from '../scheduling/generator';
-import { parseISO } from 'date-fns';
+import { parseISO, format, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
 export class ServerDatabaseService {
   private getClient() {
@@ -406,6 +406,39 @@ export class ServerDatabaseService {
     }
   }
 
+  async deleteSchedule(id: string): Promise<void> {
+    repository.deleteSchedule(id);
+    try {
+      const supabase = this.getClient();
+      await supabase.from('recurring_schedules').delete().eq('id', id);
+    } catch {
+      // Handled
+    }
+  }
+
+  async deleteClassSession(id: string): Promise<void> {
+    repository.deleteClassSession(id);
+    try {
+      const supabase = this.getClient();
+      await supabase.from('class_notes').delete().eq('class_session_id', id);
+      await supabase.from('attendance_records').delete().eq('class_session_id', id);
+      await supabase.from('class_sessions').delete().eq('id', id);
+    } catch {
+      // Handled
+    }
+  }
+
+  async deleteSessionsBeforeDate(dateStr: string): Promise<number> {
+    const count = repository.deleteSessionsBeforeDate(dateStr);
+    try {
+      const supabase = this.getClient();
+      await supabase.from('class_sessions').delete().lt('class_date', dateStr);
+    } catch {
+      // Handled
+    }
+    return count;
+  }
+
   // 4. Class Sessions & Live Calendar
   async getClassSessions(startDateStr: string, endDateStr: string): Promise<EnrichedClassSession[]> {
     try {
@@ -424,55 +457,55 @@ export class ServerDatabaseService {
         .order('class_date', { ascending: true })
         .order('scheduled_start', { ascending: true });
 
-      if (storedSessions && storedSessions.length > 0) {
-        const existingSessions: EnrichedClassSession[] = storedSessions.map((s: any) => ({
-          ...s,
-          student_name: s.students?.name || '',
-          student_class: s.students?.class_level || '',
-          subject_name: s.subjects?.name || '',
-          student: s.students,
-          subject: s.subjects,
-          notes_record: s.class_notes?.[0] || s.class_notes,
-        }));
+      const existingSessions: EnrichedClassSession[] = (storedSessions || []).map((s: any) => ({
+        ...s,
+        student_name: s.students?.name || '',
+        student_class: s.students?.class_level || '',
+        subject_name: s.subjects?.name || '',
+        student: s.students,
+        subject: s.subjects,
+        notes_record: s.class_notes?.[0] || s.class_notes,
+      }));
 
-        const { data: schedules } = await supabase.from('recurring_schedules').select('*').eq('active', true);
-        const { data: students } = await supabase.from('students').select('*').eq('status', 'ACTIVE');
-        const { data: subjects } = await supabase.from('subjects').select('*');
+      const { data: schedules } = await supabase.from('recurring_schedules').select('*').eq('active', true);
+      const { data: students } = await supabase.from('students').select('*').eq('status', 'ACTIVE');
+      const { data: subjects } = await supabase.from('subjects').select('*');
 
-        if (schedules && students && subjects) {
-          const generated = generateSessionsForRange(
-            schedules as RecurringSchedule[],
-            students as Student[],
-            subjects as Subject[],
-            existingSessions,
-            parseISO(startDateStr),
-            parseISO(endDateStr)
-          );
+      if (schedules && students && subjects) {
+        const generated = generateSessionsForRange(
+          schedules as RecurringSchedule[],
+          students as Student[],
+          subjects as Subject[],
+          existingSessions,
+          parseISO(startDateStr),
+          parseISO(endDateStr)
+        );
 
-          const storedIds = new Set(existingSessions.map((s) => s.id));
-          const finalSessions: EnrichedClassSession[] = [...existingSessions];
+        const storedIds = new Set(existingSessions.map((s) => s.id));
+        const finalSessions: EnrichedClassSession[] = [...existingSessions];
 
-          for (const gen of generated) {
-            if (!storedIds.has(gen.id)) {
-              const student = students.find((st) => st.id === gen.student_id);
-              const subject = subjects.find((sub) => sub.id === gen.subject_id);
-              finalSessions.push({
-                ...gen,
-                student_name: student?.name || '',
-                student_class: student?.class_level || '',
-                subject_name: subject?.name || '',
-                student: student as Student,
-                subject: subject as Subject,
-              });
-            }
+        for (const gen of generated) {
+          if (!storedIds.has(gen.id) && gen.class_date >= startDateStr && gen.class_date <= endDateStr) {
+            const student = students.find((st) => st.id === gen.student_id);
+            const subject = subjects.find((sub) => sub.id === gen.subject_id);
+            finalSessions.push({
+              ...gen,
+              student_name: student?.name || '',
+              student_class: student?.class_level || '',
+              subject_name: subject?.name || '',
+              student: student as Student,
+              subject: subject as Subject,
+            });
           }
+        }
 
-          return finalSessions.sort((a, b) => {
+        return finalSessions
+          .filter((s) => s.class_date >= startDateStr && s.class_date <= endDateStr)
+          .sort((a, b) => {
             const dateCmp = a.class_date.localeCompare(b.class_date);
             if (dateCmp !== 0) return dateCmp;
             return a.scheduled_start.localeCompare(b.scheduled_start);
           });
-        }
       }
     } catch {
       // Fallback
@@ -650,21 +683,24 @@ export class ServerDatabaseService {
     pendingRevenue: number;
     alerts: { message: string; severity: 'info' | 'warning' | 'danger' | 'success'; studentId?: string }[];
   }> {
-    const todayStr = '2026-08-14';
-    const tomorrowStr = '2026-08-15';
-    const monthStartStr = '2026-08-01';
-    const monthEndStr = '2026-08-31';
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const tomorrowStr = format(addDays(now, 1), 'yyyy-MM-dd');
+    const upcomingEndStr = format(addDays(now, 7), 'yyyy-MM-dd');
+    const monthStartStr = format(startOfMonth(now), 'yyyy-MM-dd');
+    const monthEndStr = format(endOfMonth(now), 'yyyy-MM-dd');
+    const currentMonthPrefix = format(now, 'yyyy-MM');
 
     const students = await this.getStudents('ACTIVE');
     const todaySessions = await this.getClassSessions(todayStr, todayStr);
-    const upcomingSessions = await this.getClassSessions(tomorrowStr, '2026-08-21');
+    const upcomingSessions = await this.getClassSessions(tomorrowStr, upcomingEndStr);
     const monthSessions = await this.getClassSessions(monthStartStr, monthEndStr);
     const invoices = await this.getInvoices();
 
     const completedThisMonth = monthSessions.filter((s) => s.status === 'PRESENT').length;
 
     const currentMonthInvoices = invoices.filter(
-      (inv) => inv.period_start?.startsWith('2026-08') || inv.due_date?.startsWith('2026-08')
+      (inv) => inv.period_start?.startsWith(currentMonthPrefix) || inv.due_date?.startsWith(currentMonthPrefix)
     );
 
     const expectedRevenue = currentMonthInvoices.reduce((sum, inv) => sum + inv.amount_due, 0);

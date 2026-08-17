@@ -238,6 +238,40 @@ export default function StudentDetailPage() {
     }
   };
 
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (confirm('Are you sure you want to delete this recurring schedule slot?')) {
+      try {
+        const res = await fetch(`/api/schedules/${scheduleId}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to delete schedule');
+
+        toast.success('Schedule Deleted', 'Recurring schedule slot removed.');
+        refreshData();
+      } catch (err: unknown) {
+        toast.error('Delete Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (confirm('Are you sure you want to delete this class session?')) {
+      try {
+        const res = await fetch(`/api/classes?id=${sessionId}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to delete session');
+
+        toast.success('Session Deleted', 'Class session removed.');
+        refreshData();
+      } catch (err: unknown) {
+        toast.error('Delete Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
+
   const completedClasses = classes.filter((c) => c.status === 'PRESENT');
   const topicsList = classes.filter((c) => c.notes_record?.topic);
 
@@ -546,17 +580,26 @@ export default function StudentDetailPage() {
                     </div>
                   </div>
 
-                  {cls.meet_url && (
-                    <a
-                      href={cls.meet_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-semibold"
+                  <div className="flex items-center gap-2">
+                    {cls.meet_url && (
+                      <a
+                        href={cls.meet_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-emerald-700 hover:underline font-semibold"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Meet
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleDeleteSession(cls.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title="Delete Class Session"
                     >
-                      <Video className="w-3.5 h-3.5" />
-                      Meet
-                    </a>
-                  )}
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -707,12 +750,21 @@ export default function StudentDetailPage() {
           <h3 className="text-sm font-bold text-slate-900">Active Recurring Timetable</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {student.schedules.map((sch) => (
-              <Card key={sch.id} className="p-4 space-y-2">
+              <Card key={sch.id} className="p-4 space-y-2 relative">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-base text-slate-900">{getDayName(sch.day_of_week)}</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
-                    {student.subjects.find((s) => s.id === sch.subject_id)?.name}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700">
+                      {student.subjects.find((s) => s.id === sch.subject_id)?.name}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSchedule(sch.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Delete Recurring Schedule Slot"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-xs text-slate-600 font-medium">
                   {formatTime12h(sch.start_time)} – {formatTime12h(sch.end_time)}

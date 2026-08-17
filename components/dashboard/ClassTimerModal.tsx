@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Play, Square, Clock, Video, CheckCircle } from 'lucide-react';
+import { Play, Square, CheckCircle, Clock, Video, User, BookOpen, AlertCircle, Calendar } from 'lucide-react';
 import { EnrichedClassSession, ClassSessionStatus } from '../../lib/types/database.types';
-import { formatTime12h } from '../../lib/utils/date';
 
 interface ClassTimerModalProps {
   session: EnrichedClassSession | null;
@@ -22,6 +21,9 @@ interface ClassTimerModalProps {
     subtopic?: string;
     homework?: string;
     notes?: string;
+    rescheduleDate?: string;
+    rescheduleStartTime?: string;
+    rescheduleEndTime?: string;
   }) => void;
 }
 
@@ -39,15 +41,17 @@ export function ClassTimerModal({
   // Form fields
   const [status, setStatus] = useState<ClassSessionStatus>('PRESENT');
   const [topic, setTopic] = useState('');
-  const [subtopic, setSubtopic] = useState('');
-  const [homework, setHomework] = useState('');
-  const [notes, setNotes] = useState('');
+  const [description, setDescription] = useState('');
+  const [absentReason, setAbsentReason] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleStartTime, setRescheduleStartTime] = useState('18:00');
+  const [rescheduleEndTime, setRescheduleEndTime] = useState('19:00');
   const [calculatedDuration, setCalculatedDuration] = useState(60);
 
   useEffect(() => {
     if (session) {
       if (session.actual_start && !session.actual_end) {
-        // Timer was already started
         setTimerRunning(true);
         const startTime = new Date(session.actual_start).getTime();
         const now = Date.now();
@@ -59,9 +63,12 @@ export function ClassTimerModal({
       setStep('TIMER');
       setStatus('PRESENT');
       setTopic(session.notes_record?.topic || '');
-      setSubtopic(session.notes_record?.subtopic || '');
-      setHomework(session.notes_record?.homework || '');
-      setNotes(session.notes_record?.notes || '');
+      setDescription(session.notes_record?.notes || '');
+      setAbsentReason('');
+      setRescheduleReason('');
+      setRescheduleDate(session.class_date);
+      setRescheduleStartTime(session.scheduled_start);
+      setRescheduleEndTime(session.scheduled_end);
     }
   }, [session, isOpen]);
 
@@ -79,60 +86,85 @@ export function ClassTimerModal({
 
   if (!session) return null;
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleStart = () => {
-    setTimerRunning(true);
     onStartTimer(session.id);
+    setTimerRunning(true);
   };
 
   const handleEnd = () => {
     setTimerRunning(false);
-    const duration = Math.max(1, Math.round(elapsedSeconds / 60)) || 60;
-    setCalculatedDuration(duration);
+    const mins = Math.max(1, Math.round(elapsedSeconds / 60));
+    setCalculatedDuration(mins);
     setStep('COMPLETE');
   };
 
   const handleSubmitCompletion = (e: React.FormEvent) => {
     e.preventDefault();
+    let finalNotes = '';
+
+    if (status === 'PRESENT') {
+      finalNotes = description;
+    } else if (status === 'ABSENT') {
+      finalNotes = absentReason ? `Absent Reason: ${absentReason}` : '';
+    } else if (status === 'RESCHEDULED') {
+      finalNotes = rescheduleReason ? `Rescheduled Reason: ${rescheduleReason}` : '';
+    }
+
     onEndTimerAndComplete({
       sessionId: session.id,
       studentId: session.student_id,
       subjectId: session.subject_id,
       status,
-      actualDurationMinutes: calculatedDuration,
-      topic,
-      subtopic,
-      homework,
-      notes,
+      actualDurationMinutes: status === 'PRESENT' ? calculatedDuration : 0,
+      topic: status === 'PRESENT' ? topic : undefined,
+      notes: finalNotes,
+      rescheduleDate: status === 'RESCHEDULED' ? rescheduleDate : undefined,
+      rescheduleStartTime: status === 'RESCHEDULED' ? rescheduleStartTime : undefined,
+      rescheduleEndTime: status === 'RESCHEDULED' ? rescheduleEndTime : undefined,
     });
     onClose();
+  };
+
+  const formatTimer = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 'TIMER' ? 'Live Class Session' : 'Complete Class & Log Attendance'}
+      title={step === 'TIMER' ? 'Live Tuition Class Session' : 'Complete & Log Class Summary'}
       description={`${session.student_name} (${session.student_class}) • ${session.subject_name}`}
       maxWidth="lg"
     >
       {step === 'TIMER' ? (
         <div className="space-y-6 py-2">
-          {/* Class Time Info */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+          {/* Quick Context Card */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-purple-50/50 border border-purple-100 text-xs">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                <Clock className="w-5 h-5" />
+              <div className="p-2 rounded-lg bg-white border border-purple-200 text-purple-600">
+                <User className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Scheduled Time</p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {formatTime12h(session.scheduled_start)} – {formatTime12h(session.scheduled_end)}
+                <p className="font-semibold text-slate-900">{session.student_name}</p>
+                <p className="text-slate-500">{session.student_class}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-white border border-purple-200 text-purple-600">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">{session.subject_name}</p>
+                <p className="text-slate-500 font-mono">
+                  {session.scheduled_start} - {session.scheduled_end}
                 </p>
               </div>
             </div>
@@ -142,7 +174,7 @@ export function ClassTimerModal({
                 href={session.meet_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
               >
                 <Video className="w-4 h-4" />
                 Join Google Meet
@@ -151,8 +183,8 @@ export function ClassTimerModal({
           </div>
 
           {/* Stopwatch Display */}
-          <div className="text-center py-8 bg-gradient-to-b from-indigo-50/50 to-transparent rounded-2xl border border-indigo-100/60">
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-2">
+          <div className="text-center py-8 bg-gradient-to-b from-purple-50/50 to-transparent rounded-2xl border border-purple-100/60">
+            <p className="text-xs font-semibold uppercase tracking-wider text-purple-600 mb-2">
               {timerRunning ? 'Class in Progress' : 'Class Ready to Start'}
             </p>
             <div className="font-mono text-5xl sm:text-6xl font-bold text-slate-900 tracking-tight">
@@ -166,7 +198,11 @@ export function ClassTimerModal({
           {/* Control Buttons */}
           <div className="flex items-center justify-center gap-4">
             {!timerRunning ? (
-              <Button onClick={handleStart} variant="primary" size="lg" className="w-full">
+              <Button
+                onClick={handleStart}
+                size="lg"
+                className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 hover:from-blue-700 hover:via-purple-700 hover:to-pink-600 text-white font-semibold shadow-sm"
+              >
                 <Play className="w-5 h-5 fill-current mr-2" />
                 Start Class Timer
               </Button>
@@ -184,7 +220,7 @@ export function ClassTimerModal({
                 setCalculatedDuration(60);
                 setStep('COMPLETE');
               }}
-              className="text-xs text-slate-500 hover:text-indigo-600 underline font-medium"
+              className="text-xs text-purple-600 hover:text-purple-800 underline font-medium"
             >
               Skip timer and mark attendance directly &rarr;
             </button>
@@ -199,10 +235,10 @@ export function ClassTimerModal({
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { val: 'PRESENT', label: 'Present', color: 'border-emerald-500 bg-emerald-50 text-emerald-700' },
-                { val: 'ABSENT', label: 'Absent', color: 'border-rose-500 bg-rose-50 text-rose-700' },
-                { val: 'RESCHEDULED', label: 'Rescheduled', color: 'border-sky-500 bg-sky-50 text-sky-700' },
-                { val: 'CANCELLED', label: 'Cancelled', color: 'border-slate-500 bg-slate-100 text-slate-700' },
+                { val: 'PRESENT', label: 'Present', color: 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20' },
+                { val: 'ABSENT', label: 'Absent', color: 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500/20' },
+                { val: 'RESCHEDULED', label: 'Rescheduled', color: 'border-purple-500 bg-purple-50 text-purple-700 ring-2 ring-purple-500/20' },
+                { val: 'CANCELLED', label: 'Cancelled', color: 'border-slate-500 bg-slate-100 text-slate-700 ring-2 ring-slate-500/20' },
               ].map((opt) => (
                 <button
                   type="button"
@@ -210,7 +246,7 @@ export function ClassTimerModal({
                   onClick={() => setStatus(opt.val as ClassSessionStatus)}
                   className={`p-2.5 rounded-xl border text-xs font-semibold text-center transition-all ${
                     status === opt.val
-                      ? `${opt.color} ring-2 ring-indigo-500/20 shadow-xs font-bold`
+                      ? `${opt.color} font-bold shadow-xs`
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -220,75 +256,152 @@ export function ClassTimerModal({
             </div>
           </div>
 
-          {/* Duration field */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Actual Teaching Duration (Minutes)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="300"
-              value={calculatedDuration}
-              onChange={(e) => setCalculatedDuration(parseInt(e.target.value, 10) || 60)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            />
-          </div>
+          {/* Dynamic Fields for PRESENT */}
+          {status === 'PRESENT' && (
+            <div className="space-y-3 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100/80">
+              <div>
+                <label className="block text-xs font-semibold text-slate-800 mb-1">
+                  Topic Covered *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Linear Equations / Chemical Bonding"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  required
+                />
+              </div>
 
-          {/* Topic & Subtopic */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Topic Covered</label>
-              <input
-                type="text"
-                placeholder="e.g. Linear Equations"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-slate-800 mb-1">
+                  Description / Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Completed Chapter 4 theory and numerical exercises."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-purple-600" />
+                  Actual Teaching Duration (Minutes)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="300"
+                  value={calculatedDuration}
+                  onChange={(e) => setCalculatedDuration(parseInt(e.target.value, 10) || 60)}
+                  className="w-full sm:w-48 px-3.5 py-1.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Subtopic / Concepts</label>
-              <input
-                type="text"
-                placeholder="e.g. Variable on both sides"
-                value={subtopic}
-                onChange={(e) => setSubtopic(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+          )}
+
+          {/* Dynamic Fields for ABSENT */}
+          {status === 'ABSENT' && (
+            <div className="space-y-3 bg-rose-50/40 p-4 rounded-xl border border-rose-100/80">
+              <div>
+                <label className="block text-xs font-semibold text-rose-900 mb-1">
+                  Reason for Absence *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Student unwell / School exams / Family function"
+                  value={absentReason}
+                  onChange={(e) => setAbsentReason(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Homework */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Homework Assigned</label>
-            <input
-              type="text"
-              placeholder="e.g. NCERT Exercise 4.2 Q1 to Q5"
-              value={homework}
-              onChange={(e) => setHomework(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          {/* Dynamic Fields for RESCHEDULED */}
+          {status === 'RESCHEDULED' && (
+            <div className="space-y-3 bg-purple-50/40 p-4 rounded-xl border border-purple-100/80">
+              <div>
+                <label className="block text-xs font-semibold text-purple-900 mb-1">
+                  Reason for Rescheduling *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Power cut / Schedule conflict / Mutual request"
+                  value={rescheduleReason}
+                  onChange={(e) => setRescheduleReason(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  required
+                />
+              </div>
 
-          {/* Tutor Notes */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Tutor Feedback / Notes</label>
-            <textarea
-              rows={2}
-              placeholder="e.g. Needs additional practice on word problems"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-purple-900 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-purple-600" />
+                    Alternate Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-purple-900 mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                    Start Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={rescheduleStartTime}
+                    onChange={(e) => setRescheduleStartTime(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-purple-900 mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                    End Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={rescheduleEndTime}
+                    onChange={(e) => setRescheduleEndTime(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Notice for CANCELLED */}
+          {status === 'CANCELLED' && (
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs">
+              <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>This class session will be marked as Cancelled. No notes or teaching duration are required.</span>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 hover:from-blue-700 hover:via-purple-700 hover:to-pink-600 text-white font-semibold shadow-sm"
+            >
               <CheckCircle className="w-4 h-4 mr-1.5" />
               Save & Complete Class
             </Button>

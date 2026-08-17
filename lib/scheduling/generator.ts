@@ -70,7 +70,13 @@ export function generateSessionsForRange(
     }
   }
 
-  return [...existingSessions, ...generated];
+  const startStr = format(startDate, 'yyyy-MM-dd');
+  const endStr = format(endDate, 'yyyy-MM-dd');
+  const filteredExisting = existingSessions.filter(
+    (s) => s.class_date >= startStr && s.class_date <= endStr
+  );
+
+  return [...filteredExisting, ...generated];
 }
 
 /**

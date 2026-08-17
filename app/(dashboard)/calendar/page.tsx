@@ -21,6 +21,7 @@ import {
   Filter,
   XCircle,
   RotateCw,
+  Trash2,
 } from 'lucide-react';
 import {
   format,
@@ -47,7 +48,7 @@ export default function CalendarPage() {
   const toast = useToast();
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>('MONTH');
-  const [currentDate, setCurrentDate] = useState<Date>(new Date('2026-08-14')); // August 2026 anchor
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [sessions, setSessions] = useState<EnrichedClassSession[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -61,6 +62,8 @@ export default function CalendarPage() {
   const [attendanceModalSession, setAttendanceModalSession] = useState<EnrichedClassSession | null>(null);
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteDate, setBulkDeleteDate] = useState('2026-08-03');
 
   // Reschedule Form
   const [rescheduleDate, setRescheduleDate] = useState('');
@@ -227,6 +230,44 @@ export default function CalendarPage() {
     }
   };
 
+  const handleDeleteSingleSession = async () => {
+    if (!selectedSession) return;
+    if (confirm(`Are you sure you want to permanently delete the class session for ${selectedSession.student_name} on ${selectedSession.class_date}?`)) {
+      try {
+        const res = await fetch(`/api/classes?id=${selectedSession.id}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to delete');
+
+        toast.success('Session Deleted', 'Class session permanently removed.');
+        setSelectedSession(null);
+        refreshSessions();
+      } catch (err: unknown) {
+        toast.error('Delete Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
+
+  const handleBulkDeleteSessions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (confirm(`Are you sure you want to permanently delete all class sessions before ${bulkDeleteDate}?`)) {
+      try {
+        const res = await fetch(`/api/classes?beforeDate=${bulkDeleteDate}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to delete past sessions');
+
+        toast.success('Past Sessions Cleared', json.message || `Deleted sessions before ${bulkDeleteDate}`);
+        setBulkDeleteModalOpen(false);
+        refreshSessions();
+      } catch (err: unknown) {
+        toast.error('Delete Failed', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+  };
+
   // Calendar rendering calculations
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -298,6 +339,16 @@ export default function CalendarPage() {
               </button>
             ))}
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setBulkDeleteModalOpen(true)}
+            className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50 font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-500" />
+            Delete Past Sessions
+          </Button>
         </div>
       </div>
 
@@ -635,6 +686,15 @@ export default function CalendarPage() {
                 <XCircle className="w-4 h-4 mr-1.5" />
                 Cancel Session
               </Button>
+
+              <Button
+                variant="outline"
+                className="text-rose-700 hover:bg-rose-100 border-rose-300 font-semibold"
+                onClick={handleDeleteSingleSession}
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Delete Session
+              </Button>
             </div>
           </div>
         </Modal>
@@ -749,6 +809,44 @@ export default function CalendarPage() {
         onClose={() => setAttendanceModalSession(null)}
         onSave={handleSaveAttendance}
       />
+
+      {/* Bulk Delete Past Sessions Modal */}
+      {bulkDeleteModalOpen && (
+        <Modal
+          isOpen={bulkDeleteModalOpen}
+          onClose={() => setBulkDeleteModalOpen(false)}
+          title="Delete Past Class Sessions"
+          description="Permanently delete all class sessions scheduled before a specific date"
+        >
+          <form onSubmit={handleBulkDeleteSessions} className="space-y-4 py-1">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Delete All Sessions Scheduled Before Date *
+              </label>
+              <input
+                type="date"
+                value={bulkDeleteDate}
+                onChange={(e) => setBulkDeleteDate(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-rose-500 bg-white"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                For example, enter <strong>2026-08-03</strong> to delete all sessions before August 3, 2026.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button type="button" variant="outline" onClick={() => setBulkDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-xs">
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Delete Sessions Before Date
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

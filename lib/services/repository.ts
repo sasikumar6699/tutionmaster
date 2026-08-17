@@ -358,6 +358,31 @@ class TuitionRepository {
     return true;
   }
 
+  public deleteSchedule(id: string): boolean {
+    this.schedules = this.schedules.filter((sch) => sch.id !== id);
+    this.classSessions = this.classSessions.filter((cs) => cs.schedule_id !== id || cs.status !== 'UPCOMING');
+    this.saveToLocalStorage();
+    return true;
+  }
+
+  public deleteClassSession(id: string): boolean {
+    this.classSessions = this.classSessions.filter((cs) => cs.id !== id);
+    this.attendance = this.attendance.filter((ar) => ar.class_session_id !== id);
+    this.notes = this.notes.filter((cn) => cn.class_session_id !== id);
+    this.saveToLocalStorage();
+    return true;
+  }
+
+  public deleteSessionsBeforeDate(dateStr: string): number {
+    const toRemove = this.classSessions.filter((cs) => cs.class_date < dateStr);
+    const removeIds = new Set(toRemove.map((cs) => cs.id));
+    this.classSessions = this.classSessions.filter((cs) => !removeIds.has(cs.id));
+    this.attendance = this.attendance.filter((ar) => !removeIds.has(ar.class_session_id));
+    this.notes = this.notes.filter((cn) => !removeIds.has(cn.class_session_id));
+    this.saveToLocalStorage();
+    return removeIds.size;
+  }
+
   public clearAllData(): void {
     this.students = [];
     this.studentSubjects = [];
@@ -417,12 +442,6 @@ class TuitionRepository {
     Object.assign(sched, data, { updated_at: new Date().toISOString() });
     this.saveToLocalStorage();
     return sched;
-  }
-
-  public deleteSchedule(id: string): boolean {
-    this.schedules = this.schedules.filter((s) => s.id !== id);
-    this.saveToLocalStorage();
-    return true;
   }
 
   // --- Class Sessions ---
