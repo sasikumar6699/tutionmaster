@@ -4,6 +4,7 @@ import {
   Subject,
   Student,
   EnrichedStudent,
+  ClassSession,
   EnrichedClassSession,
   EnrichedBillingRecord,
   Payment,
@@ -514,6 +515,10 @@ export class ServerDatabaseService {
     return repository.getClassSessions({ startDate: startDateStr, endDate: endDateStr });
   }
 
+  async getClassSessionById(id: string): Promise<EnrichedClassSession | null> {
+    return repository.getClassSessionById(id);
+  }
+
   async startClassTimer(sessionId: string): Promise<void> {
     repository.startClassTimer(sessionId);
     try {
@@ -583,8 +588,8 @@ export class ServerDatabaseService {
     newDate: string,
     newStartTime: string,
     newEndTime: string
-  ): Promise<void> {
-    repository.rescheduleClass(sessionId, newDate, newStartTime, newEndTime);
+  ): Promise<{ originalSession: ClassSession; updatedOriginal: ClassSession; newSession: ClassSession }> {
+    const result = repository.rescheduleClass(sessionId, newDate, newStartTime, newEndTime);
     try {
       const supabase = this.getClient();
       await supabase
@@ -597,6 +602,7 @@ export class ServerDatabaseService {
     } catch {
       // Handled
     }
+    return result;
   }
 
   async cancelSession(sessionId: string, reason?: string): Promise<void> {

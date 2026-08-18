@@ -229,6 +229,7 @@ class TuitionRepository {
       subjects,
       schedules,
       billing_profile: billingProfile,
+      billing: billingProfile,
       active_balance: activeBalance,
       completed_classes_count: completedClasses.length,
       total_classes_count: studentSessions.length,
@@ -491,7 +492,28 @@ class TuitionRepository {
   }
 
   public getClassSessionById(id: string): EnrichedClassSession | null {
-    const session = this.classSessions.find((s) => s.id === id);
+    let session = this.classSessions.find((s) => s.id === id);
+    if (!session && id.startsWith('gen-')) {
+      const dateStr = id.slice(-10);
+      const scheduleId = id.slice(4, -11);
+      const sched = this.schedules.find((s) => s.id === scheduleId);
+      if (sched) {
+        session = {
+          id,
+          student_id: sched.student_id,
+          subject_id: sched.subject_id,
+          schedule_id: sched.id,
+          class_date: dateStr,
+          scheduled_start: sched.start_time,
+          scheduled_end: sched.end_time,
+          status: 'UPCOMING',
+          meet_url: sched.meet_url,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        this.classSessions.push(session);
+      }
+    }
     if (!session) return null;
     return this.enrichClassSession(session);
   }
@@ -515,16 +537,32 @@ class TuitionRepository {
     };
   }
 
+  public createSessionManual(data: Partial<ClassSession> & { student_id: string; subject_id: string; class_date: string; scheduled_start: string; scheduled_end: string }): ClassSession {
+    const session: ClassSession = {
+      id: data.id || `sess-${Date.now()}`,
+      student_id: data.student_id,
+      subject_id: data.subject_id,
+      schedule_id: data.schedule_id,
+      class_date: data.class_date,
+      scheduled_start: data.scheduled_start,
+      scheduled_end: data.scheduled_end,
+      status: data.status || 'UPCOMING',
+      meet_url: data.meet_url,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.classSessions.push(session);
+    this.saveToLocalStorage();
+    return session;
+  }
+
   // --- Live Timer & Class Completion ---
   public startClassTimer(sessionId: string): ClassSession {
     let session = this.classSessions.find((s) => s.id === sessionId);
     if (!session) {
-      // If it was a generated instance, persist it
-      const enriched = this.getClassSessionById(sessionId);
-      if (enriched) {
-        session = { ...enriched };
-        this.classSessions.push(session);
-      } else {
+      this.getClassSessionById(sessionId);
+      session = this.classSessions.find((s) => s.id === sessionId);
+      if (!session) {
         throw new Error('Class session not found');
       }
     }
@@ -656,7 +694,7 @@ class TuitionRepository {
     newStartTime: string,
     newEndTime: string,
     customMeetUrl?: string
-  ): { originalSession: ClassSession; newSession: ClassSession } {
+  ): { originalSession: ClassSession; updatedOriginal: ClassSession; newSession: ClassSession } {
     let session = this.classSessions.find((s) => s.id === sessionId);
     if (!session) {
       const enriched = this.getClassSessionById(sessionId);
@@ -680,7 +718,7 @@ class TuitionRepository {
     this.classSessions.push(newSession);
     this.saveToLocalStorage();
 
-    return { originalSession: session, newSession };
+    return { originalSession: session, updatedOriginal: session, newSession };
   }
 
   public cancelClass(sessionId: string, reason?: string): ClassSession {
