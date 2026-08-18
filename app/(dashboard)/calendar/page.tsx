@@ -22,6 +22,7 @@ import {
   XCircle,
   RotateCw,
   Trash2,
+  Plus,
 } from 'lucide-react';
 import {
   format,
@@ -41,6 +42,7 @@ import {
 } from 'date-fns';
 import { formatDate, formatTime12h } from '../../../lib/utils/date';
 import { QuickAttendanceModal } from '../../../components/dashboard/QuickAttendanceModal';
+import { DayDetailModal } from '../../../components/calendar/DayDetailModal';
 
 type CalendarViewMode = 'MONTH' | 'WEEK' | 'DAY';
 
@@ -64,6 +66,8 @@ export default function CalendarPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeleteDate, setBulkDeleteDate] = useState('2026-08-03');
+  const [selectedDayForModal, setSelectedDayForModal] = useState<Date | null>(null);
+  const [dayDetailModalOpen, setDayDetailModalOpen] = useState(false);
 
   // Reschedule Form
   const [rescheduleDate, setRescheduleDate] = useState('');
@@ -341,6 +345,18 @@ export default function CalendarPage() {
           </div>
 
           <Button
+            size="sm"
+            onClick={() => {
+              setSelectedDayForModal(new Date());
+              setDayDetailModalOpen(true);
+            }}
+            className="text-xs bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white font-bold shadow-xs hover:opacity-95"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            Add a Schedule
+          </Button>
+
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setBulkDeleteModalOpen(true)}
@@ -413,15 +429,20 @@ export default function CalendarPage() {
               return (
                 <div
                   key={idx}
-                  className={`p-2 min-h-[110px] transition-colors flex flex-col justify-between ${
+                  onClick={() => {
+                    setSelectedDayForModal(day);
+                    setDayDetailModalOpen(true);
+                  }}
+                  className={`p-2 min-h-[110px] transition-all flex flex-col justify-between cursor-pointer rounded-xl border border-transparent hover:border-purple-300 hover:bg-purple-50/20 group ${
                     !isCurrentMonth ? 'bg-slate-50/50 text-slate-400' : 'bg-white'
-                  } ${isToday ? 'bg-indigo-50/20' : ''}`}
+                  } ${isToday ? 'bg-purple-50/30 ring-1 ring-purple-200 font-semibold' : ''}`}
+                  title="Click to view details or add schedule for this date"
                 >
                   <div className="flex items-center justify-between">
                     <span
                       className={`text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center ${
                         isToday
-                          ? 'bg-indigo-600 text-white shadow-xs'
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xs'
                           : isCurrentMonth
                           ? 'text-slate-800'
                           : 'text-slate-400'
@@ -430,7 +451,7 @@ export default function CalendarPage() {
                       {format(day, 'd')}
                     </span>
                     {daySessions.length > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-purple-50 text-purple-700">
                         {daySessions.length}
                       </span>
                     )}
@@ -446,12 +467,15 @@ export default function CalendarPage() {
                       return (
                         <button
                           key={session.id}
-                          onClick={() => setSelectedSession(session)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSession(session);
+                          }}
                           className={`w-full text-left p-1.5 rounded-lg text-[11px] font-medium border transition-all truncate block ${
                             isPresent
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
                               : isUpcoming
-                              ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 font-semibold'
+                              ? 'bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100 font-semibold'
                               : isRescheduled
                               ? 'bg-sky-50 text-sky-800 border-sky-200 line-through opacity-75'
                               : 'bg-slate-100 text-slate-700 border-slate-200'
@@ -478,14 +502,22 @@ export default function CalendarPage() {
           <div className="grid grid-cols-7 divide-x divide-slate-200 min-h-[500px]">
             {weekDays.map((day, idx) => {
               const dayStr = format(day, 'yyyy-MM-dd');
-              const isToday = isSameDay(day, new Date('2026-08-14'));
+              const isToday = isSameDay(day, new Date());
               const daySessions = sessions.filter((s) => s.class_date === dayStr);
 
               return (
-                <div key={idx} className="flex flex-col">
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setSelectedDayForModal(day);
+                    setDayDetailModalOpen(true);
+                  }}
+                  className="flex flex-col cursor-pointer hover:bg-purple-50/20 transition-colors group"
+                  title="Click to view details or add schedule for this date"
+                >
                   <div
                     className={`p-3 text-center border-b border-slate-200 ${
-                      isToday ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700'
+                      isToday ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : 'bg-slate-50 text-slate-700'
                     }`}
                   >
                     <p className="text-xs font-semibold">{format(day, 'EEE')}</p>
@@ -494,13 +526,21 @@ export default function CalendarPage() {
 
                   <div className="p-2 space-y-2 flex-1 bg-slate-50/20">
                     {daySessions.length === 0 ? (
-                      <p className="text-[11px] text-slate-400 text-center py-6">No classes</p>
+                      <div className="text-center py-6">
+                        <p className="text-[11px] text-slate-400">No classes</p>
+                        <span className="text-[10px] text-purple-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                          + Add Schedule
+                        </span>
+                      </div>
                     ) : (
                       daySessions.map((sess) => (
                         <div
                           key={sess.id}
-                          onClick={() => setSelectedSession(sess)}
-                          className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs hover:border-indigo-300 cursor-pointer space-y-1.5 transition-all text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSession(sess);
+                          }}
+                          className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs hover:border-purple-300 cursor-pointer space-y-1.5 transition-all text-xs"
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-900">{sess.student_name}</span>
@@ -509,7 +549,7 @@ export default function CalendarPage() {
                           <p className="text-[11px] text-slate-500">
                             {formatTime12h(sess.scheduled_start)} – {formatTime12h(sess.scheduled_end)}
                           </p>
-                          <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">
+                          <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium">
                             {sess.subject_name}
                           </span>
                         </div>
@@ -529,15 +569,40 @@ export default function CalendarPage() {
           <CardHeader>
             <CardTitle className="text-base font-bold flex items-center justify-between">
               <span>Sessions on {format(currentDate, 'EEEE, dd MMMM yyyy')}</span>
-              <span className="text-xs font-normal text-slate-500">
-                {sessions.filter((s) => s.class_date === format(currentDate, 'yyyy-MM-dd')).length} classes scheduled
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-normal text-slate-500">
+                  {sessions.filter((s) => s.class_date === format(currentDate, 'yyyy-MM-dd')).length} classes scheduled
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDayForModal(currentDate);
+                    setDayDetailModalOpen(true);
+                  }}
+                  className="text-xs bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white font-bold shadow-xs hover:opacity-95"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add a Schedule
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {sessions.filter((s) => s.class_date === format(currentDate, 'yyyy-MM-dd')).length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-sm">
-                No classes scheduled on this day.
+                <p>No classes scheduled on this day.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDayForModal(currentDate);
+                    setDayDetailModalOpen(true);
+                  }}
+                  className="mt-3 text-xs font-semibold text-purple-700 border-purple-200 hover:bg-purple-50"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add a Schedule for this Day
+                </Button>
               </div>
             ) : (
               sessions
@@ -545,10 +610,10 @@ export default function CalendarPage() {
                 .map((sess) => (
                   <div
                     key={sess.id}
-                    className="p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white hover:border-indigo-300 transition-all"
+                    className="p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white hover:border-purple-300 transition-all"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-indigo-50 text-indigo-800 text-center font-bold text-xs min-w-[70px]">
+                      <div className="p-3 rounded-xl bg-purple-50 text-purple-800 text-center font-bold text-xs min-w-[70px]">
                         {formatTime12h(sess.scheduled_start)}
                       </div>
                       <div>
@@ -565,7 +630,7 @@ export default function CalendarPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => setSelectedSession(sess)}
-                        className="text-xs"
+                        className="text-xs font-semibold"
                       >
                         Manage Session
                       </Button>
@@ -847,6 +912,23 @@ export default function CalendarPage() {
           </form>
         </Modal>
       )}
+
+      {/* Day Details & Add Schedule Modal */}
+      <DayDetailModal
+        isOpen={dayDetailModalOpen}
+        onClose={() => setDayDetailModalOpen(false)}
+        selectedDate={selectedDayForModal}
+        sessions={sessions}
+        students={students}
+        subjects={subjects}
+        onOpenSession={(sess) => {
+          setSelectedSession(sess);
+        }}
+        onOpenAttendance={(sess) => {
+          setAttendanceModalSession(sess);
+        }}
+        onRefresh={refreshSessions}
+      />
     </div>
   );
 }

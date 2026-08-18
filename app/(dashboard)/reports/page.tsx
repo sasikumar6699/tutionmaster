@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { repository } from '../../../lib/services/repository';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../components/ui/Toast';
@@ -103,28 +102,40 @@ export default function ReportsPage() {
     downloadCSV(`Monthly_Report_${report.month}.csv`, csv);
   };
 
-  const exportAttendanceCSV = () => {
-    const sessions = repository.getClassSessions();
-    let csv = `Class Session Attendance Ledger\n`;
-    csv += `Date,Student Name,Class,Subject,Scheduled Time,Actual Duration (Mins),Status,Meet URL,Topic,Homework\n`;
+  const exportAttendanceCSV = async () => {
+    try {
+      const res = await fetch(`/api/classes`);
+      const json = await res.json();
+      const sessions = json.success ? json.data : [];
+      let csv = `Class Session Attendance Ledger\n`;
+      csv += `Date,Student Name,Class,Subject,Scheduled Time,Actual Duration (Mins),Status,Meet URL,Topic,Homework\n`;
 
-    sessions.forEach((s) => {
-      csv += `"${s.class_date}","${s.student_name}","${s.student_class}","${s.subject_name}","${s.scheduled_start} - ${s.scheduled_end}",${s.actual_duration_minutes || ''},"${s.status}","${s.meet_url || ''}","${s.notes_record?.topic || ''}","${s.notes_record?.homework || ''}"\n`;
-    });
+      sessions.forEach((s: any) => {
+        csv += `"${s.class_date}","${s.student_name}","${s.student_class}","${s.subject_name}","${s.scheduled_start} - ${s.scheduled_end}",${s.actual_duration_minutes || ''},"${s.status}","${s.meet_url || ''}","${s.notes_record?.topic || ''}","${s.notes_record?.homework || ''}"\n`;
+      });
 
-    downloadCSV(`Attendance_Ledger_${report.month}.csv`, csv);
+      downloadCSV(`Attendance_Ledger_${report?.month || 'latest'}.csv`, csv);
+    } catch {
+      toast.error('Export Failed', 'Could not export attendance data');
+    }
   };
 
-  const exportPaymentsCSV = () => {
-    const payments = repository.getPayments();
-    let csv = `Tuition Payments Ledger\n`;
-    csv += `Payment ID,Student ID,Date,Amount (INR),Payment Method,Notes\n`;
+  const exportPaymentsCSV = async () => {
+    try {
+      const res = await fetch('/api/fees');
+      const json = await res.json();
+      const payments = json.success ? json.data?.payments || [] : [];
+      let csv = `Tuition Payments Ledger\n`;
+      csv += `Payment ID,Student ID,Date,Amount (INR),Payment Method,Notes\n`;
 
-    payments.forEach((p) => {
-      csv += `"${p.id}","${p.student_id}","${p.payment_date}",${p.amount},"${p.payment_method}","${p.notes || ''}"\n`;
-    });
+      payments.forEach((p: any) => {
+        csv += `"${p.id}","${p.student_id}","${p.payment_date}",${p.amount},"${p.payment_method}","${p.notes || ''}"\n`;
+      });
 
-    downloadCSV(`Payments_Ledger_${report.month}.csv`, csv);
+      downloadCSV(`Payments_Ledger_${report?.month || 'latest'}.csv`, csv);
+    } catch {
+      toast.error('Export Failed', 'Could not export payments data');
+    }
   };
 
   return (

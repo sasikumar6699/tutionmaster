@@ -583,6 +583,88 @@ export class ServerDatabaseService {
     return result;
   }
 
+  async createManualClass(data: {
+    student_id: string;
+    subject_id: string;
+    class_date: string;
+    scheduled_start: string;
+    scheduled_end: string;
+    status: ClassSessionStatus;
+    meet_url?: string;
+    topic?: string;
+    subtopic?: string;
+    notes?: string;
+    actualDurationMinutes?: number;
+  }): Promise<{ session: EnrichedClassSession; invoiceGenerated?: any }> {
+    const result = repository.createManualClass(data);
+
+    try {
+      const supabase = this.getClient();
+      const now = new Date().toISOString();
+
+      await supabase.from('class_sessions').insert({
+        id: result.session.id,
+        student_id: data.student_id,
+        subject_id: data.subject_id,
+        class_date: data.class_date,
+        scheduled_start: data.scheduled_start,
+        scheduled_end: data.scheduled_end,
+        status: data.status,
+        meet_url: data.meet_url || null,
+        actual_start: result.session.actual_start || null,
+        actual_end: result.session.actual_end || null,
+        actual_duration_minutes: result.session.actual_duration_minutes || null,
+      });
+
+      if (data.status === 'PRESENT' || data.status === 'ABSENT') {
+        const attId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `att-${Date.now()}`;
+        await supabase.from('attendance').insert({
+          id: attId,
+          class_session_id: result.session.id,
+          student_id: data.student_id,
+          status: data.status,
+          marked_at: now,
+          notes: data.notes || null,
+        });
+      }
+
+      if (data.topic || data.subtopic || data.notes) {
+        const noteId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `note-${Date.now()}`;
+        await supabase.from('class_notes').insert({
+          id: noteId,
+          class_session_id: result.session.id,
+          student_id: data.student_id,
+          subject_id: data.subject_id,
+          topic: data.topic || null,
+          subtopic: data.subtopic || null,
+          notes: data.notes || null,
+        });
+      }
+
+      if (result.invoiceGenerated) {
+        await supabase.from('billing_records').insert({
+          id: result.invoiceGenerated.id,
+          student_id: result.invoiceGenerated.student_id,
+          billing_profile_id: result.invoiceGenerated.billing_profile_id || null,
+          period_start: result.invoiceGenerated.period_start,
+          period_end: result.invoiceGenerated.period_end,
+          billing_type: result.invoiceGenerated.billing_type,
+          classes_count: result.invoiceGenerated.classes_count,
+          rate: result.invoiceGenerated.rate || 0,
+          amount_due: result.invoiceGenerated.amount_due,
+          amount_received: result.invoiceGenerated.amount_received || 0,
+          balance: result.invoiceGenerated.balance,
+          status: result.invoiceGenerated.status,
+          due_date: result.invoiceGenerated.due_date,
+        });
+      }
+    } catch {
+      // Handled
+    }
+
+    return result;
+  }
+
   async rescheduleSession(
     sessionId: string,
     newDate: string,

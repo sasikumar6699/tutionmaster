@@ -26,11 +26,22 @@ import { formatDuration } from '../utils/date';
 // Initial Seed Data IDs
 const DEMO_TUTOR_ID = '00000000-0000-0000-0000-000000000001';
 
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 const INITIAL_PROFILE: Profile = {
   id: DEMO_TUTOR_ID,
   user_id: '00000000-0000-0000-0000-000000000001',
   full_name: 'SN',
-  email: 'tutor@tutorpulse.io',
+  email: 'tutor@tuitionmaster.app',
   phone: '+91 98765 43210',
   timezone: 'Asia/Kolkata',
   created_at: '2026-07-01T00:00:00Z',
@@ -38,11 +49,11 @@ const INITIAL_PROFILE: Profile = {
 };
 
 const INITIAL_SUBJECTS: Subject[] = [
-  { id: 'sub-1', tutor_id: DEMO_TUTOR_ID, name: 'Maths', description: 'Advanced & Core Mathematics', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'sub-2', tutor_id: DEMO_TUTOR_ID, name: 'Physics', description: 'Mechanics, Electromagnetism, & Optics', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'sub-3', tutor_id: DEMO_TUTOR_ID, name: 'Chemistry', description: 'Organic, Inorganic & Physical Chemistry', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'sub-4', tutor_id: DEMO_TUTOR_ID, name: 'Biology', description: 'Botany & Zoology', created_at: '2026-07-01T00:00:00Z' },
-  { id: 'sub-5', tutor_id: DEMO_TUTOR_ID, name: 'English', description: 'Grammar, Literature & Composition', created_at: '2026-07-01T00:00:00Z' },
+  { id: '11111111-0000-0000-0000-000000000001', tutor_id: DEMO_TUTOR_ID, name: 'Maths', description: 'Advanced & Core Mathematics', created_at: '2026-07-01T00:00:00Z' },
+  { id: '11111111-0000-0000-0000-000000000002', tutor_id: DEMO_TUTOR_ID, name: 'Physics', description: 'Mechanics, Electromagnetism, & Optics', created_at: '2026-07-01T00:00:00Z' },
+  { id: '11111111-0000-0000-0000-000000000003', tutor_id: DEMO_TUTOR_ID, name: 'Chemistry', description: 'Organic, Inorganic & Physical Chemistry', created_at: '2026-07-01T00:00:00Z' },
+  { id: '11111111-0000-0000-0000-000000000004', tutor_id: DEMO_TUTOR_ID, name: 'Biology', description: 'Botany & Zoology', created_at: '2026-07-01T00:00:00Z' },
+  { id: '11111111-0000-0000-0000-000000000005', tutor_id: DEMO_TUTOR_ID, name: 'English', description: 'Grammar, Literature & Composition', created_at: '2026-07-01T00:00:00Z' },
 ];
 
 const INITIAL_STUDENTS: Student[] = [];
@@ -55,7 +66,7 @@ const INITIAL_CLASSES: ClassSession[] = [];
 const INITIAL_NOTES: ClassNote[] = [];
 const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
 
-// In-Memory / Local Storage Store State
+// Storage Repository with Disk + LocalStorage Double Persistence
 class TuitionRepository {
   private profile: Profile = INITIAL_PROFILE;
   private subjects: Subject[] = [...INITIAL_SUBJECTS];
@@ -74,26 +85,55 @@ class TuitionRepository {
     this.loadFromLocalStorage();
   }
 
-  private saveToLocalStorage() {
+  private getStoreFilePath(): string | null {
+    if (typeof window === 'undefined') {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const path = eval('require')('path');
+        return path.resolve(process.cwd(), '.data', 'tuition_master_store.json');
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  public saveToLocalStorage() {
+    const state = {
+      profile: this.profile,
+      subjects: this.subjects,
+      students: this.students,
+      studentSubjects: this.studentSubjects,
+      schedules: this.schedules,
+      classSessions: this.classSessions,
+      notes: this.notes,
+      attendance: this.attendance,
+      billingProfiles: this.billingProfiles,
+      billingRecords: this.billingRecords,
+      payments: this.payments,
+      settings: this.settings,
+    };
+
     if (typeof window !== 'undefined') {
       try {
-        const state = {
-          profile: this.profile,
-          subjects: this.subjects,
-          students: this.students,
-          studentSubjects: this.studentSubjects,
-          schedules: this.schedules,
-          classSessions: this.classSessions,
-          notes: this.notes,
-          attendance: this.attendance,
-          billingProfiles: this.billingProfiles,
-          billingRecords: this.billingRecords,
-          payments: this.payments,
-          settings: this.settings,
-        };
-        localStorage.setItem('tutorpulse_db_v1', JSON.stringify(state));
-      } catch (e) {
-        console.error('Error saving repository to localStorage:', e);
+        localStorage.setItem('tuition_master_db_v2', JSON.stringify(state));
+      } catch {
+        // Handled
+      }
+    } else {
+      try {
+        const filePath = this.getStoreFilePath();
+        if (filePath) {
+          const fs = eval('require')('fs');
+          const path = eval('require')('path');
+          const dir = path.dirname(filePath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf8');
+        }
+      } catch {
+        // Fallback for environments with readonly filesystem
       }
     }
   }
@@ -101,27 +141,47 @@ class TuitionRepository {
   private loadFromLocalStorage() {
     if (typeof window !== 'undefined') {
       try {
-        const raw = localStorage.getItem('tutorpulse_db_v1');
+        const raw = localStorage.getItem('tuition_master_db_v2');
         if (raw) {
           const state = JSON.parse(raw);
-          if (state.students && state.students.length > 0) {
-            this.profile = state.profile || this.profile;
-            this.subjects = state.subjects || this.subjects;
-            this.students = state.students || this.students;
-            this.studentSubjects = state.studentSubjects || this.studentSubjects;
-            this.schedules = state.schedules || this.schedules;
-            this.classSessions = state.classSessions || this.classSessions;
-            this.notes = state.notes || this.notes;
-            this.attendance = state.attendance || this.attendance;
-            this.billingProfiles = state.billingProfiles || this.billingProfiles;
-            this.billingRecords = state.billingRecords || this.billingRecords;
-            this.payments = state.payments || this.payments;
-            this.settings = state.settings || this.settings;
+          this.applyState(state);
+        }
+      } catch {
+        // Handled
+      }
+    } else {
+      try {
+        const filePath = this.getStoreFilePath();
+        if (filePath) {
+          const fs = eval('require')('fs');
+          if (fs.existsSync(filePath)) {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            if (raw) {
+              const state = JSON.parse(raw);
+              this.applyState(state);
+            }
           }
         }
-      } catch (e) {
-        console.error('Error loading repository from localStorage:', e);
+      } catch {
+        // Fallback
       }
+    }
+  }
+
+  private applyState(state: any) {
+    if (state) {
+      if (state.profile) this.profile = state.profile;
+      if (Array.isArray(state.subjects) && state.subjects.length > 0) this.subjects = state.subjects;
+      if (Array.isArray(state.students)) this.students = state.students;
+      if (Array.isArray(state.studentSubjects)) this.studentSubjects = state.studentSubjects;
+      if (Array.isArray(state.schedules)) this.schedules = state.schedules;
+      if (Array.isArray(state.classSessions)) this.classSessions = state.classSessions;
+      if (Array.isArray(state.notes)) this.notes = state.notes;
+      if (Array.isArray(state.attendance)) this.attendance = state.attendance;
+      if (Array.isArray(state.billingProfiles)) this.billingProfiles = state.billingProfiles;
+      if (Array.isArray(state.billingRecords)) this.billingRecords = state.billingRecords;
+      if (Array.isArray(state.payments)) this.payments = state.payments;
+      if (Array.isArray(state.settings)) this.settings = state.settings;
     }
   }
 
@@ -158,7 +218,7 @@ class TuitionRepository {
 
   public addSubject(name: string, description?: string): Subject {
     const newSubject: Subject = {
-      id: `sub-${Date.now()}`,
+      id: generateUUID(),
       tutor_id: DEMO_TUTOR_ID,
       name,
       description,
@@ -178,11 +238,7 @@ class TuitionRepository {
   // --- Students ---
   public getStudents(statusFilter?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' | 'ALL'): EnrichedStudent[] {
     return this.students
-      .filter((s) => {
-        if (!statusFilter || statusFilter === 'ACTIVE') return s.status === 'ACTIVE';
-        if (statusFilter === 'ALL') return true;
-        return s.status === statusFilter;
-      })
+      .filter((s) => (statusFilter === 'ALL' || !statusFilter ? true : s.status === statusFilter))
       .map((s) => this.enrichStudent(s));
   }
 
@@ -193,10 +249,11 @@ class TuitionRepository {
   }
 
   private enrichStudent(student: Student): EnrichedStudent {
-    const subjectIds = this.studentSubjects
+    const studentSubjectIds = this.studentSubjects
       .filter((ss) => ss.student_id === student.id)
       .map((ss) => ss.subject_id);
-    const subjects = this.subjects.filter((sub) => subjectIds.includes(sub.id));
+
+    const subjects = this.subjects.filter((sub) => studentSubjectIds.includes(sub.id));
     const schedules = this.schedules.filter((sch) => sch.student_id === student.id && sch.active);
     const billingProfile = this.billingProfiles.find((bp) => bp.student_id === student.id && bp.active);
 
@@ -218,9 +275,14 @@ class TuitionRepository {
       const progress = calculateBatchProgress(billingProfile, completedClasses, invoices);
       batchProgress = {
         completed: progress.currentBatchCompleted,
+        currentBatchCompleted: progress.currentBatchCompleted,
         target: progress.targetBatchSize,
+        targetBatchSize: progress.targetBatchSize,
         percentage: Math.min(100, Math.round((progress.currentBatchCompleted / progress.targetBatchSize) * 100)),
         amount: progress.batchAmount,
+        batchAmount: progress.batchAmount,
+        isReadyForInvoice: progress.isReadyForInvoice,
+        alertMessage: progress.alertMessage,
       };
     }
 
@@ -260,7 +322,7 @@ class TuitionRepository {
       billing_cycle_end_day?: number;
     };
   }): EnrichedStudent {
-    const studentId = `stud-${Date.now()}`;
+    const studentId = generateUUID();
     const newStudent: Student = {
       id: studentId,
       tutor_id: DEMO_TUTOR_ID,
@@ -282,7 +344,7 @@ class TuitionRepository {
     // Link subjects
     for (const subId of data.subject_ids) {
       this.studentSubjects.push({
-        id: `ss-${Date.now()}-${subId}`,
+        id: generateUUID(),
         student_id: studentId,
         subject_id: subId,
         created_at: new Date().toISOString(),
@@ -292,7 +354,7 @@ class TuitionRepository {
     // Add recurring schedules
     for (const sch of data.schedules) {
       this.schedules.push({
-        id: `sch-${Date.now()}-${sch.day_of_week}`,
+        id: generateUUID(),
         student_id: studentId,
         subject_id: sch.subject_id,
         day_of_week: sch.day_of_week,
@@ -308,7 +370,7 @@ class TuitionRepository {
 
     // Billing profile
     this.billingProfiles.push({
-      id: `bp-${Date.now()}`,
+      id: generateUUID(),
       student_id: studentId,
       billing_type: data.billing.billing_type,
       fixed_amount: data.billing.fixed_amount,
@@ -403,7 +465,7 @@ class TuitionRepository {
       Object.assign(profile, data, { updated_at: new Date().toISOString() });
     } else {
       profile = {
-        id: `bp-${Date.now()}`,
+        id: generateUUID(),
         student_id: studentId,
         billing_type: data.billing_type || 'MONTHLY_FIXED',
         active: true,
@@ -428,7 +490,7 @@ class TuitionRepository {
   public addSchedule(data: Omit<RecurringSchedule, 'id' | 'created_at' | 'updated_at'>): RecurringSchedule {
     const newSchedule: RecurringSchedule = {
       ...data,
-      id: `sch-${Date.now()}`,
+      id: generateUUID(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -480,8 +542,18 @@ class TuitionRepository {
     }
 
     return sessions
+      .filter((s) => {
+        if (filters?.startDate && filters?.endDate) {
+          return s.class_date >= filters.startDate && s.class_date <= filters.endDate;
+        }
+        return true;
+      })
       .map((s) => this.enrichClassSession(s))
-      .sort((a, b) => b.class_date.localeCompare(a.class_date) || a.scheduled_start.localeCompare(b.scheduled_start));
+      .sort((a, b) => {
+        const dateCmp = a.class_date.localeCompare(b.class_date);
+        if (dateCmp !== 0) return dateCmp;
+        return a.scheduled_start.localeCompare(b.scheduled_start);
+      });
   }
 
   public getTodayClasses(todayDateStr?: string): EnrichedClassSession[] {
@@ -539,7 +611,7 @@ class TuitionRepository {
 
   public createSessionManual(data: Partial<ClassSession> & { student_id: string; subject_id: string; class_date: string; scheduled_start: string; scheduled_end: string }): ClassSession {
     const session: ClassSession = {
-      id: data.id || `sess-${Date.now()}`,
+      id: data.id || generateUUID(),
       student_id: data.student_id,
       subject_id: data.subject_id,
       schedule_id: data.schedule_id,
@@ -627,8 +699,8 @@ class TuitionRepository {
         existingAtt.marked_at = new Date().toISOString();
       } else {
         this.attendance.push({
-          id: `att-${Date.now()}`,
-          class_session_id: session.id,
+          id: generateUUID(),
+          class_session_id: session!.id,
           student_id: data.studentId,
           status: data.status,
           marked_at: new Date().toISOString(),
@@ -637,7 +709,7 @@ class TuitionRepository {
       }
     }
 
-    // Class Notes / Homework record
+    // Notes record
     if (data.topic || data.subtopic || data.homework || data.notes) {
       const existingNote = this.notes.find((n) => n.class_session_id === session!.id);
       if (existingNote) {
@@ -648,8 +720,8 @@ class TuitionRepository {
         existingNote.updated_at = new Date().toISOString();
       } else {
         this.notes.push({
-          id: `note-${Date.now()}`,
-          class_session_id: session.id,
+          id: generateUUID(),
+          class_session_id: session!.id,
           student_id: data.studentId,
           subject_id: data.subjectId,
           topic: data.topic,
@@ -662,7 +734,7 @@ class TuitionRepository {
       }
     }
 
-    // Auto Billing Evaluation Check (e.g. Sreesha 8th class trigger)
+    // Auto Billing Evaluation Check (e.g. Batch billing threshold)
     let invoiceGenerated: BillingRecord | undefined;
     const billingProfile = this.billingProfiles.find((bp) => bp.student_id === data.studentId && bp.active);
     if (billingProfile && data.status === 'PRESENT') {
@@ -674,7 +746,7 @@ class TuitionRepository {
       );
       if (evalResult.shouldGenerateInvoice && evalResult.newInvoice) {
         invoiceGenerated = {
-          id: `inv-${Date.now()}`,
+          id: generateUUID(),
           ...evalResult.newInvoice,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -685,6 +757,93 @@ class TuitionRepository {
 
     this.saveToLocalStorage();
     return { session, invoiceGenerated };
+  }
+
+  public createManualClass(data: {
+    student_id: string;
+    subject_id: string;
+    class_date: string;
+    scheduled_start: string;
+    scheduled_end: string;
+    status: ClassSessionStatus;
+    meet_url?: string;
+    topic?: string;
+    subtopic?: string;
+    notes?: string;
+    actualDurationMinutes?: number;
+  }): { session: EnrichedClassSession; invoiceGenerated?: BillingRecord } {
+    const sessionId = generateUUID();
+    const now = new Date().toISOString();
+    const duration = data.actualDurationMinutes || 60;
+
+    const newSession: ClassSession = {
+      id: sessionId,
+      student_id: data.student_id,
+      subject_id: data.subject_id,
+      class_date: data.class_date,
+      scheduled_start: data.scheduled_start,
+      scheduled_end: data.scheduled_end,
+      status: data.status,
+      meet_url: data.meet_url,
+      actual_start: data.status === 'PRESENT' ? `${data.class_date}T${data.scheduled_start}:00Z` : undefined,
+      actual_end: data.status === 'PRESENT' ? `${data.class_date}T${data.scheduled_end}:00Z` : undefined,
+      actual_duration_minutes: data.status === 'PRESENT' ? duration : undefined,
+      created_at: now,
+      updated_at: now,
+    };
+
+    this.classSessions.push(newSession);
+
+    // Attendance record
+    if (data.status === 'PRESENT' || data.status === 'ABSENT') {
+      this.attendance.push({
+        id: generateUUID(),
+        class_session_id: sessionId,
+        student_id: data.student_id,
+        status: data.status as 'PRESENT' | 'ABSENT',
+        marked_at: now,
+        notes: data.notes,
+      });
+    }
+
+    // Notes record
+    if (data.topic || data.subtopic || data.notes) {
+      this.notes.push({
+        id: generateUUID(),
+        class_session_id: sessionId,
+        student_id: data.student_id,
+        subject_id: data.subject_id,
+        topic: data.topic,
+        subtopic: data.subtopic,
+        notes: data.notes,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    // Billing calculation if PRESENT
+    let invoiceGenerated: BillingRecord | undefined;
+    const billingProfile = this.billingProfiles.find((bp) => bp.student_id === data.student_id && bp.active);
+    if (billingProfile && data.status === 'PRESENT') {
+      const evalResult = evaluateBilling(
+        data.student_id,
+        billingProfile,
+        this.classSessions,
+        this.billingRecords
+      );
+      if (evalResult.shouldGenerateInvoice && evalResult.newInvoice) {
+        invoiceGenerated = {
+          id: generateUUID(),
+          ...evalResult.newInvoice,
+          created_at: now,
+          updated_at: now,
+        };
+        this.billingRecords.push(invoiceGenerated);
+      }
+    }
+
+    this.saveToLocalStorage();
+    return { session: this.enrichClassSession(newSession), invoiceGenerated };
   }
 
   // --- Rescheduling & Cancelling ---
@@ -737,66 +896,47 @@ class TuitionRepository {
     session.updated_at = new Date().toISOString();
 
     if (reason) {
-      this.notes.push({
-        id: `note-${Date.now()}`,
-        class_session_id: session.id,
-        student_id: session.student_id,
-        subject_id: session.subject_id,
-        notes: `Class Cancelled: ${reason}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      const existingNote = this.notes.find((n) => n.class_session_id === session!.id);
+      if (existingNote) {
+        existingNote.notes = `Cancelled: ${reason}`;
+        existingNote.updated_at = new Date().toISOString();
+      } else {
+        this.notes.push({
+          id: generateUUID(),
+          class_session_id: session.id,
+          student_id: session.student_id,
+          subject_id: session.subject_id,
+          notes: `Cancelled: ${reason}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
     }
 
     this.saveToLocalStorage();
     return session;
   }
 
-  // --- Billing Records & Invoices ---
-  public getBillingRecords(filters?: {
-    studentId?: string;
-    status?: string;
-    month?: string; // YYYY-MM
-  }): EnrichedBillingRecord[] {
+  // --- Invoicing & Billing ---
+  public getBillingRecords(studentId?: string): EnrichedBillingRecord[] {
     let records = [...this.billingRecords];
-
-    if (filters?.studentId) {
-      records = records.filter((r) => r.student_id === filters.studentId);
-    }
-    if (filters?.status && filters.status !== 'ALL') {
-      records = records.filter((r) => r.status === filters.status);
-    }
-    if (filters?.month) {
-      records = records.filter((r) => r.due_date.startsWith(filters.month!));
+    if (studentId) {
+      records = records.filter((r) => r.student_id === studentId);
     }
 
     return records
-      .map((r) => {
-        const student = this.students.find((s) => s.id === r.student_id);
-        const payments = this.payments.filter((p) => p.billing_record_id === r.id);
+      .map((rec) => {
+        const student = this.students.find((s) => s.id === rec.student_id);
         return {
-          ...r,
-          student_name: student ? student.name : 'Unknown',
+          ...rec,
+          student_name: student ? student.name : 'Unknown Student',
           student_class: student ? student.class_level : '',
-          payments,
+          student,
         };
       })
       .sort((a, b) => b.due_date.localeCompare(a.due_date));
   }
 
-  public createBillingRecord(data: Omit<BillingRecord, 'id' | 'created_at' | 'updated_at'>): BillingRecord {
-    const newRecord: BillingRecord = {
-      ...data,
-      id: `inv-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    this.billingRecords.push(newRecord);
-    this.saveToLocalStorage();
-    return newRecord;
-  }
-
-  // --- Payments ---
   public getPayments(studentId?: string): Payment[] {
     if (studentId) {
       return this.payments.filter((p) => p.student_id === studentId);
@@ -806,18 +946,14 @@ class TuitionRepository {
 
   public recordPayment(data: {
     student_id: string;
-    billing_record_id?: string;
     amount: number;
     payment_date: string;
     payment_method: PaymentMethod;
     notes?: string;
+    billing_record_id?: string;
   }): { payment: Payment; updatedInvoice?: BillingRecord } {
-    if (data.amount <= 0) {
-      throw new Error('Payment amount must be greater than zero');
-    }
-
     const payment: Payment = {
-      id: `pay-${Date.now()}`,
+      id: generateUUID(),
       student_id: data.student_id,
       billing_record_id: data.billing_record_id,
       amount: data.amount,
@@ -830,23 +966,24 @@ class TuitionRepository {
     this.payments.push(payment);
 
     let updatedInvoice: BillingRecord | undefined;
+
     if (data.billing_record_id) {
-      const invoice = this.billingRecords.find((r) => r.id === data.billing_record_id);
+      const invoice = this.billingRecords.find((inv) => inv.id === data.billing_record_id);
       if (invoice) {
         const { updatedInvoice: updated } = applyPaymentToInvoice(invoice, data.amount);
         Object.assign(invoice, updated);
         updatedInvoice = invoice;
       }
     } else {
-      // Auto-apply to oldest pending invoice for this student
-      const pendingInvoices = this.billingRecords
-        .filter((r) => r.student_id === data.student_id && r.balance > 0)
+      // Auto-apply FIFO to open unpaid invoices for this student
+      let remaining = data.amount;
+      const unpaid = this.billingRecords
+        .filter((inv) => inv.student_id === data.student_id && inv.balance > 0)
         .sort((a, b) => a.due_date.localeCompare(b.due_date));
 
-      let remaining = data.amount;
-      for (const inv of pendingInvoices) {
+      for (const inv of unpaid) {
         if (remaining <= 0) break;
-        const toApply = Math.min(inv.balance, remaining);
+        const toApply = Math.min(remaining, inv.balance);
         const { updatedInvoice: updated } = applyPaymentToInvoice(inv, toApply);
         Object.assign(inv, updated);
         remaining -= toApply;
@@ -956,34 +1093,6 @@ class TuitionRepository {
   } {
     const report = this.getMonthlyReport('2026-08');
     const alerts: { message: string; severity: 'info' | 'warning' | 'danger' | 'success'; studentId?: string }[] = [];
-
-    // Check Sreesha Batch
-    const sreesha = this.students.find((s) => s.name === 'Sreesha');
-    if (sreesha) {
-      const enriched = this.enrichStudent(sreesha);
-      if (enriched.batch_progress) {
-        if (enriched.batch_progress.completed === enriched.batch_progress.target - 1) {
-          alerts.push({
-            message: `Sreesha has completed ${enriched.batch_progress.completed}/${enriched.batch_progress.target} classes. Next class will trigger a ₹${enriched.batch_progress.amount.toLocaleString('en-IN')} fee.`,
-            severity: 'info',
-            studentId: sreesha.id,
-          });
-        }
-      }
-    }
-
-    // Check Siva fee due
-    const siva = this.students.find((s) => s.name === 'Siva');
-    if (siva) {
-      const sivaInvoices = this.billingRecords.filter((r) => r.student_id === siva.id && r.balance > 0);
-      sivaInvoices.forEach((inv) => {
-        alerts.push({
-          message: `Siva's ₹${inv.balance.toLocaleString('en-IN')} fee is due on ${format(parseISO(inv.due_date), 'dd MMM')}.`,
-          severity: 'warning',
-          studentId: siva.id,
-        });
-      });
-    }
 
     // Check pending balance
     const totalPending = this.billingRecords.reduce((sum, inv) => sum + inv.balance, 0);

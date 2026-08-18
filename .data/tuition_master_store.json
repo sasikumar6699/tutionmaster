@@ -1,0 +1,59 @@
+{
+  "profile": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "full_name": "SN",
+    "email": "tutor@tuitionmaster.app",
+    "phone": "+91 98765 43210",
+    "timezone": "Asia/Kolkata",
+    "created_at": "2026-07-01T00:00:00Z",
+    "updated_at": "2026-08-14T00:00:00Z"
+  },
+  "subjects": [
+    {
+      "id": "11111111-0000-0000-0000-000000000001",
+      "tutor_id": "00000000-0000-0000-0000-000000000001",
+      "name": "Maths",
+      "description": "Advanced & Core Mathematics",
+      "created_at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "11111111-0000-0000-0000-000000000002",
+      "tutor_id": "00000000-0000-0000-0000-000000000001",
+      "name": "Physics",
+      "description": "Mechanics, Electromagnetism, & Optics",
+      "created_at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "11111111-0000-0000-0000-000000000003",
+      "tutor_id": "00000000-0000-0000-0000-000000000001",
+      "name": "Chemistry",
+      "description": "Organic, Inorganic & Physical Chemistry",
+      "created_at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "11111111-0000-0000-0000-000000000004",
+      "tutor_id": "00000000-0000-0000-0000-000000000001",
+      "name": "Biology",
+      "description": "Botany & Zoology",
+      "created_at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "11111111-0000-0000-0000-000000000005",
+      "tutor_id": "00000000-0000-0000-0000-000000000001",
+      "name": "English",
+      "description": "Grammar, Literature & Composition",
+      "created_at": "2026-07-01T00:00:00Z"
+    }
+  ],
+  "students": [],
+  "studentSubjects": [],
+  "schedules": [],
+  "classSessions": [],
+  "notes": [],
+  "attendance": [],
+  "billingProfiles": [],
+  "billingRecords": [],
+  "payments": [],
+  "settings": []
+}

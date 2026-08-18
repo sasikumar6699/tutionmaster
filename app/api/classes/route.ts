@@ -26,6 +26,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Timer started' });
     }
 
+    if (payload.action === 'CREATE_MANUAL_CLASS') {
+      const result = await serverDb.createManualClass(payload.data);
+      return NextResponse.json({ success: true, data: result });
+    }
+
     if (payload.action === 'COMPLETE_CLASS') {
       const result = await serverDb.completeClass(payload.data);
       return NextResponse.json({ success: true, data: result });

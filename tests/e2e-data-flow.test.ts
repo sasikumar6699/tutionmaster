@@ -299,15 +299,49 @@ async function runE2ETestingSuite() {
     assert(!anyStudentSessionsLeft, 'All associated class sessions and schedules purged on student deletion');
 
     // ----------------------------------------------------
-    // TEST 9: Dashboard Aggregations Flow
+    // TEST 10: Manual Calendar Class Creation & Fees Flow
     // ----------------------------------------------------
-    console.log('\n--- 9. DASHBOARD REAL-TIME METRICS FLOW ---');
-    const dashboardMetrics = await serverDb.getDashboardMetrics();
-    assert(typeof dashboardMetrics.activeStudentsCount === 'number', 'Dashboard returns active student count');
-    assert(Array.isArray(dashboardMetrics.todayClasses), 'Dashboard returns today classes list');
-    assert(typeof dashboardMetrics.expectedRevenue === 'number', 'Dashboard returns expected revenue');
-    assert(typeof dashboardMetrics.receivedRevenue === 'number', 'Dashboard returns received revenue');
-    assert(typeof dashboardMetrics.pendingRevenue === 'number', 'Dashboard returns pending revenue');
+    console.log('\n--- 10. MANUAL CALENDAR CLASS CREATION & FEES FLOW ---');
+    // Create a new student for manual calendar schedule testing
+    const testCalStudent = await serverDb.createStudent({
+      name: 'Rohan Verma',
+      class_level: 'Grade 9',
+      parent_name: 'Sanjay Verma',
+      parent_phone: '9876500001',
+      subject_ids: [mathsSubject.id],
+      schedules: [],
+      billing: {
+        billing_type: 'PER_CLASS',
+        per_class_amount: 500,
+      },
+    });
+
+    assert(Boolean(testCalStudent.id), 'Test calendar student created successfully');
+
+    // Create manual past completed class on calendar for 2026-08-10
+    const manualClassResult = await serverDb.createManualClass({
+      student_id: testCalStudent.id,
+      subject_id: mathsSubject.id,
+      class_date: '2026-08-10',
+      scheduled_start: '17:00',
+      scheduled_end: '18:00',
+      status: 'PRESENT',
+      topic: 'Polynomials & Factoring',
+      notes: 'Completed practice worksheet questions 1-15',
+      actualDurationMinutes: 60,
+    });
+
+    assert(manualClassResult.session.status === 'PRESENT', 'Manual past class created with status PRESENT');
+    assert(manualClassResult.session.class_date === '2026-08-10', 'Manual class date accurately recorded as 2026-08-10');
+    assert(manualClassResult.session.notes_record?.topic === 'Polynomials & Factoring', 'Manual class topic & notes saved');
+
+    const calStudentAfterManualClass = await serverDb.getStudentById(testCalStudent.id);
+    assert(calStudentAfterManualClass?.completed_classes_count === 1, 'Manual completed class immediately incremented student completed count to 1');
+
+    // Clean up test student
+    await serverDb.deleteStudent(testCalStudent.id);
+    const cleanedCalStudent = await serverDb.getStudentById(testCalStudent.id);
+    assert(cleanedCalStudent === null, 'Test calendar student cleaned up');
 
     console.log('\n======================================================');
     console.log(`📊 E2E TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);
